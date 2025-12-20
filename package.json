@@ -19,6 +19,7 @@
   "license": "MIT",
   "dependencies": {
     "@azure/identity": "^4.13.0",
+    "@azure/identity-cache-persistence": "^1.2.0",
     "@modelcontextprotocol/sdk": "^1.0.4"
   },
   "devDependencies": {

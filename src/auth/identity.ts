@@ -8,12 +8,17 @@ import {
   TokenCredential,
   AccessToken,
   TokenCachePersistenceOptions,
+  useIdentityPlugin,
 } from '@azure/identity';
+import { cachePersistencePlugin } from '@azure/identity-cache-persistence';
 import { info, warn, error as logError } from '../utils/logger.js';
 import { AuthenticationError, ConfigurationError } from '../utils/errors.js';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
+
+// Enable persistent token caching
+useIdentityPlugin(cachePersistencePlugin);
 
 /**
  * Authentication method types
