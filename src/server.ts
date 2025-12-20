@@ -6,8 +6,9 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import { logger, info, error as logError } from './utils/logger.js';
 import { formatErrorResponse, ValidationError } from './utils/errors.js';
-import { requireString, optionalString, optionalBoolean } from './utils/validation.js';
-import { getAuthManager, requireAuthentication, isAuthenticationReady, REQUIRED_SCOPES } from './auth/identity.js';
+import { requireString, optionalString } from './utils/validation.js';
+import { requireAuthentication } from './auth/identity.js';
+import { copilotRetrieval } from './tools/retrieval.js';
 
 /**
  * Create and configure the MCP server
@@ -16,7 +17,7 @@ export function createServer(): Server {
   const server = new Server(
     {
       name: 'm365-copilot-mcp',
-      version: '0.3.0',
+      version: '0.4.0',
     },
     {
       capabilities: {
@@ -28,55 +29,17 @@ export function createServer(): Server {
   // Define available tools
   const tools: Tool[] = [
     {
-      name: 'hello',
-      description: 'A simple test tool that echoes back a greeting message. Use this to verify the MCP server connection is working.',
+      name: 'm365copilotretrieval',
+      description: 'The Microsoft 365 Copilot Retrieval tool allows for the retrieval of relevant text extracts from SharePoint and OneDrive content that the calling user has access to, while respecting the defined access controls within the tenant. The tool searches both SharePoint and OneDrive in parallel and returns combined results sorted by relevance. Use the Retrieval API to ground your generative AI solutions with Microsoft 365 data while optimizing for context recall.',
       inputSchema: {
         type: 'object',
         properties: {
-          name: {
+          queryString: {
             type: 'string',
-            description: 'The name to greet',
+            description: 'Natural language query to search for relevant content in Microsoft 365',
           },
         },
-        required: ['name'],
-      },
-    },
-    {
-      name: 'echo',
-      description: 'Echoes back the provided message with optional formatting. Useful for testing parameter passing and validation.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          message: {
-            type: 'string',
-            description: 'The message to echo back',
-          },
-          uppercase: {
-            type: 'boolean',
-            description: 'Convert message to uppercase (default: false)',
-          },
-          prefix: {
-            type: 'string',
-            description: 'Optional prefix to add before the message',
-          },
-        },
-        required: ['message'],
-      },
-    },
-    {
-      name: 'serverInfo',
-      description: 'Returns information about the MCP server including version, capabilities, and available utilities.',
-      inputSchema: {
-        type: 'object',
-        properties: {},
-      },
-    },
-    {
-      name: 'authConfig',
-      description: 'Returns current Azure AD authentication configuration (without secrets). Shows tenant ID, client ID, and auth method.',
-      inputSchema: {
-        type: 'object',
-        properties: {},
+        required: ['queryString'],
       },
     },
   ];
@@ -96,130 +59,22 @@ export function createServer(): Server {
 
     try {
       switch (name) {
-        case 'hello': {
-          // Require authentication for this tool (lazy authentication on first call)
+        case 'm365copilotretrieval': {
+          // Require authentication for this tool
           await requireAuthentication();
 
-          const userName = requireString(args?.name, 'name');
+          // Validate and extract parameters
+          const queryString = requireString(args?.queryString, 'queryString');
 
-          // Get access token to verify authentication is working
-          const authManager = getAuthManager();
-          const accessToken = await authManager.getAccessToken(REQUIRED_SCOPES);
+          // Call the Copilot Retrieval API
+          const result = await copilotRetrieval(queryString);
 
-          // For security, only show partial token (first 20 and last 20 characters)
-          const tokenPreview = accessToken.length > 40
-            ? `${accessToken.substring(0, 20)}...${accessToken.substring(accessToken.length - 20)}`
-            : 'token too short';
-
-          const response = {
-            greeting: `Hello, ${userName}! Welcome to M365 Copilot MCP Server.`,
-            status: 'Connection is working successfully!',
-            authentication: {
-              authenticated: true,
-              tokenLength: accessToken.length,
-              tokenPreview: tokenPreview,
-              scopesRequested: REQUIRED_SCOPES.length,
-            }
-          };
-
+          // Return the raw JSON response
           return {
             content: [
               {
                 type: 'text',
-                text: JSON.stringify(response, null, 2),
-              },
-            ],
-          };
-        }
-
-        case 'echo': {
-          // Require authentication for this tool (lazy authentication on first call)
-          await requireAuthentication();
-
-          const message = requireString(args?.message, 'message');
-          const uppercase = args?.uppercase === true;
-          const prefix = optionalString(args?.prefix, 'prefix');
-
-          let result = message;
-          if (uppercase) {
-            result = result.toUpperCase();
-          }
-          if (prefix) {
-            result = `${prefix} ${result}`;
-          }
-
-          return {
-            content: [
-              {
-                type: 'text',
-                text: result,
-              },
-            ],
-          };
-        }
-
-        case 'serverInfo': {
-          // Require authentication for this tool (lazy authentication on first call)
-          await requireAuthentication();
-
-          const authManager = getAuthManager();
-          const serverInfo = {
-            name: 'm365-copilot-mcp',
-            version: '0.3.0',
-            stage: 'Stage 3 - Azure Identity Integration',
-            capabilities: {
-              tools: true,
-              resources: false,
-              prompts: false,
-            },
-            utilities: {
-              errorHandling: ['MCPError', 'ValidationError', 'AuthenticationError', 'APIError', 'ConfigurationError'],
-              logging: ['debug', 'info', 'warn', 'error'],
-              validation: ['requireString', 'requireNumber', 'requireBoolean', 'requireArray', 'requireObject', 'requireEnum'],
-            },
-            authentication: {
-              configured: authManager.isConfigured(),
-              authenticated: isAuthenticationReady(),
-              method: 'InteractiveBrowser',
-              defaultClientId: 'f44ab954-9e38-4330-aa49-e93d73ab0ea6',
-              defaultTenantId: 'common',
-              enforcementPolicy: 'All tools require authentication (lazy, on first call)',
-              note: 'Per MCP spec for STDIO: credentials retrieved from environment, authentication happens on first tool call',
-            },
-            toolCount: tools.length,
-            availableTools: tools.map(t => t.name),
-          };
-
-          return {
-            content: [
-              {
-                type: 'text',
-                text: JSON.stringify(serverInfo, null, 2),
-              },
-            ],
-          };
-        }
-
-        case 'authConfig': {
-          // This tool does NOT require authentication - it's used for diagnostics
-          const authManager = getAuthManager();
-          const config = authManager.getConfig();
-          const authStatus = authManager.getAuthStatus();
-          const authConfigInfo = {
-            configured: authManager.isConfigured(),
-            authenticated: isAuthenticationReady(),
-            tenantId: config.tenantId,
-            clientId: config.clientId,
-            authMethod: config.authMethod,
-            authStatus: authStatus,
-            note: 'This tool is for diagnostics. It does not require authentication.',
-          };
-
-          return {
-            content: [
-              {
-                type: 'text',
-                text: JSON.stringify(authConfigInfo, null, 2),
+                text: JSON.stringify(result, null, 2),
               },
             ],
           };

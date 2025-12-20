@@ -25,3 +25,6 @@ Thumbs.db
 # Token cache
 *.cache
 .m365-copilot-cache
+
+# Claude Code
+.claude/

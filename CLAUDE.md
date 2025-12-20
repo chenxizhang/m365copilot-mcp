@@ -23,11 +23,10 @@ Development follows a staged approach:
 1. **Stage 1**: Minimal MCP Server Foundation (COMPLETED)
 2. **Stage 2**: Enhanced Tools & Error Handling (COMPLETED)
 3. **Stage 3**: Azure Identity Integration (COMPLETED)
-4. **Stage 4**: Microsoft Graph API Test
-5. **Stage 5**: M365 Copilot Retrieval API
-6. **Stage 6**: M365 Copilot Search API
-7. **Stage 7**: M365 Copilot Chat API
-8. **Stage 8**: Production Polish
+4. **Stage 4**: M365 Copilot Retrieval API (COMPLETED)
+5. **Stage 5**: M365 Copilot Search API
+6. **Stage 6**: M365 Copilot Chat API
+7. **Stage 7**: Production Polish
 
 ## Project Structure
 
@@ -39,17 +38,13 @@ m365copilot-mcp/
 │   ├── utils/                # Utility modules (Stage 2+)
 │   │   ├── logger.ts         # Logging utilities
 │   │   ├── errors.ts         # Error handling utilities
-│   │   └── validation.ts     # Input validation helpers
-│   ├── tools/                # Tool implementations (Stage 3+)
-│   │   ├── graph/            # Microsoft Graph API tools
-│   │   ├── retrieval/        # M365 Copilot Retrieval tools
-│   │   ├── search/           # M365 Copilot Search tools
-│   │   └── chat/             # M365 Copilot Chat tools
+│   │   ├── validation.ts     # Input validation helpers
+│   │   └── httpClient.ts     # Graph REST API client (Stage 4+)
+│   ├── tools/                # Tool implementations (Stage 4+)
+│   │   └── retrieval.ts      # M365 Copilot Retrieval API
 │   └── auth/                 # Authentication modules (Stage 3+)
 │       └── identity.ts       # Azure Identity integration
 ├── build/                    # Compiled JavaScript (generated)
-├── .github/
-│   └── copilot-instructions.md  # GitHub Copilot instructions
 ├── package.json              # Dependencies and scripts
 ├── tsconfig.json             # TypeScript configuration
 ├── .gitignore                # Git ignore rules
@@ -77,12 +72,11 @@ git pull origin master
 When task is complete:
 1. Update `CLAUDE.md` with any architecture changes
 2. Update `README.md` with user-facing changes
-3. Sync `.github/copilot-instructions.md` with `CLAUDE.md`
-4. Run tests (when available)
-5. Build the project: `npm run build`
-6. Test manually with Claude Code CLI
-7. Commit changes with descriptive message
-8. Push to remote: `git push origin master`
+3. Run tests (when available)
+4. Build the project: `npm run build`
+5. Test manually with Claude Code CLI
+6. Commit changes with descriptive message
+7. Push to remote if configured: `git push origin master` (only if remote origin exists)
 
 ## Stage-Specific Guidelines
 
@@ -111,20 +105,35 @@ Completed features:
   - ExternalItem.Read.All - Read external items
   - Files.Read.All - Read all files
 
-### Stage 4: Microsoft Graph API Test
-Will focus on:
-- Creating Microsoft Graph API client
-- Testing basic Graph API calls
-- Implementing error handling for API failures
+### Stage 4: M365 Copilot Retrieval API (COMPLETED)
+Completed features:
+- Created HTTP client utility (`src/utils/httpClient.ts`) for Graph REST API calls
+- Implemented Copilot Retrieval API tool (`src/tools/retrieval.ts`)
+- Added `m365copilotretrieval` MCP tool - RAG-based retrieval from SharePoint and OneDrive
+- **Parallel retrieval**: Automatically searches both SharePoint and OneDrive simultaneously
+- Combines and sorts results by relevance score
+- Uses beta endpoints for preview features
+- Returns relevant text extracts with metadata (title, author, relevance scores)
+- Comprehensive error handling for API failures (401, 403, 429, 500)
+- Removed all test and debug tools
 
-### Stage 4-7: API Integration
+**Implementation Approach:**
+- Direct REST API calls via fetch() instead of SDK (simpler for preview APIs)
+- Modular design: httpClient utility can be reused for future API integrations
+- Hardcoded parallel calls to both 'sharePoint' and 'oneDriveBusiness' data sources
+- Fixed request parameters: resourceMetadata=['title','author'], maximumNumberOfResults=5 per source (max 10 total)
+- User-configurable: queryString only
+- Simplicity over abstraction: no unnecessary parameters or configuration options
+- Result size control: Limited to prevent agent overload while maintaining good coverage
+
+### Stage 5-6: Additional API Integration
 Each stage will:
-- Add specific API client implementations
-- Create tools that expose API functionality
+- Add specific API tool implementations
+- Reuse httpClient utility for consistency
 - Include comprehensive error handling
 - Provide clear documentation
 
-### Stage 8: Production Polish
+### Stage 7: Production Polish
 Final stage will:
 - Add comprehensive testing
 - Optimize performance

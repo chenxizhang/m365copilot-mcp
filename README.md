@@ -2,9 +2,9 @@
 
 An MCP (Model Context Protocol) server that integrates with Microsoft 365 Copilot APIs, providing access to Retrieval, Search, and Chat capabilities.
 
-## Current Status: Stage 3 - Azure Identity Integration
+## Current Status: Stage 4 - M365 Copilot Retrieval API
 
-Building on Stages 1 and 2, this stage adds Azure AD authentication support with multiple authentication methods and token management.
+This stage adds the first production tool - Copilot Retrieval API - enabling RAG-based search across SharePoint, OneDrive, and Copilot connectors with full Azure AD authentication.
 
 ## Prerequisites
 
@@ -57,70 +57,35 @@ You should see `m365-copilot` in the list with status "connected".
 
 ## Available Tools
 
-### hello
+### m365copilotretrieval
 
-A simple test tool that echoes back a greeting message.
+The Microsoft 365 Copilot Retrieval tool allows for the retrieval of relevant text extracts from SharePoint and OneDrive content that the calling user has access to, while respecting the defined access controls within the tenant. Use the Retrieval API to ground your generative AI solutions with Microsoft 365 data while optimizing for context recall.
 
-**Parameters:**
-- `name` (string, required): The name to greet
-
-**Example usage:**
-Ask Claude: "Use the hello tool to greet John"
-
-### echo
-
-Echoes back the provided message with optional formatting. Useful for testing parameter passing and validation.
+**What it does:**
+- Performs RAG (Retrieval-Augmented Generation) search across user's M365 content
+- **Searches both SharePoint and OneDrive in parallel** automatically
+- Returns up to 10 combined results (5 from each source) sorted by relevance score
+- Includes metadata: title, author, web URL, relevance scores
+- Respects user's access permissions automatically
 
 **Parameters:**
-- `message` (string, required): The message to echo back
-- `uppercase` (boolean, optional): Convert message to uppercase (default: false)
-- `prefix` (string, optional): Optional prefix to add before the message
+- `queryString` (string, required): Natural language query to search for relevant content
 
 **Example usage:**
-- Ask Claude: "Use the echo tool with message 'Hello World'"
-- Ask Claude: "Use the echo tool with message 'test', uppercase true, and prefix 'OUTPUT:'"
+- Ask Claude: "Use m365copilotretrieval to search for information about project deadlines"
+- Ask Claude: "Search my M365 content for budget reports from last quarter"
+- Ask Claude: "Find documents mentioning the new product launch"
 
-### serverInfo
+**Response format:**
+Returns JSON with `retrievalHits` array containing:
+- `webUrl`: Link to the source document
+- `extracts`: Array of relevant text snippets with `text` and `relevanceScore`
+- `resourceType`: Type of resource (e.g., "externalItem")
+- `resourceMetadata`: Document metadata (title, author, etc.)
 
-Returns information about the MCP server including version, capabilities, and available utilities.
-
-**Parameters:** None
-
-**Example usage:**
-Ask Claude: "Use the serverInfo tool to show server information"
-
-### authConfig
-
-Returns current Azure AD authentication configuration (without secrets). Shows tenant ID, client ID, and auth method.
-
-**Parameters:** None
-
-**Example usage:**
-Ask Claude: "Use the authConfig tool to show authentication configuration"
-
-### authTest
-
-**[Diagnostic Tool Only]** Manually tests or retries authentication. This tool is only needed for troubleshooting - normal operation does not require calling this tool as authentication happens automatically on server startup.
-
-**Parameters:**
-- `scopes` (array of strings, optional): Scopes to request (default: required M365 Copilot scopes)
-
-**Default Scopes Requested:**
-- `Sites.Read.All` - Access SharePoint sites
-- `Mail.Read` - Read user mail
-- `People.Read.All` - Read organizational contacts
-- `OnlineMeetingTranscript.Read.All` - Read meeting transcripts
-- `Chat.Read` - Read Teams chats
-- `ChannelMessage.Read.All` - Read Teams channel messages
-- `ExternalItem.Read.All` - Read external items
-- `Files.Read.All` - Read all files
-
-**When to use:**
-- Only use for troubleshooting authentication issues
-- Server authenticates automatically on startup - manual authentication is not needed
-
-**Example usage:**
-- Ask Claude: "Use the authTest tool to test authentication" (troubleshooting only)
+**Difference from Search:**
+- **Retrieval** (this tool): Returns text content extracts for RAG/grounding - ideal for answering questions
+- **Search** (coming soon): Returns document links only - ideal for finding documents
 
 ## Development
 
@@ -148,11 +113,14 @@ m365copilot-mcp/
 ├── src/
 │   ├── index.ts              # Main entry point with stdio transport
 │   ├── server.ts             # MCP server initialization and tools
-│   ├── utils/                # Utility modules (Stage 2+)
+│   ├── utils/                # Utility modules
 │   │   ├── logger.ts         # Logging utilities
 │   │   ├── errors.ts         # Error handling utilities
-│   │   └── validation.ts     # Input validation helpers
-│   └── auth/                 # Authentication modules (Stage 3+)
+│   │   ├── validation.ts     # Input validation helpers
+│   │   └── httpClient.ts     # Graph REST API client
+│   ├── tools/                # Tool implementations
+│   │   └── retrieval.ts      # Copilot Retrieval API
+│   └── auth/                 # Authentication modules
 │       └── identity.ts       # Azure Identity integration
 ├── build/                    # Compiled JavaScript (generated)
 ├── .env.example              # Example environment configuration
@@ -163,37 +131,20 @@ m365copilot-mcp/
 └── README.md                 # This file
 ```
 
-## Stage 2 Features
+## Key Features
 
-### Enhanced Error Handling
-- Custom error types: `MCPError`, `ValidationError`, `AuthenticationError`, `APIError`, `ConfigurationError`
-- Structured error responses with error codes and details
-- Proper error formatting for MCP protocol
+### Stage 4: M365 Copilot Retrieval API
+- **Copilot Retrieval API**: RAG-based search across SharePoint, OneDrive, and Copilot connectors
+- **HTTP Client Utility**: Reusable Graph REST API client with error handling
+- **Direct REST API calls**: Uses fetch() for preview beta endpoints
+- **Structured responses**: Returns text extracts with metadata and relevance scores
 
-### Logging System
-- Configurable log levels (DEBUG, INFO, WARN, ERROR)
-- Structured logging with timestamps and context
-- Logs to stderr to avoid stdio protocol interference
-- Environment variable support: `LOG_LEVEL` (DEBUG, INFO, WARN, ERROR)
-
-### Input Validation
-- Type-safe parameter validation functions
-- Required parameter helpers: `requireString`, `requireNumber`, `requireBoolean`, `requireArray`, `requireObject`, `requireEnum`
-- Optional parameter helpers: `optionalString`, `optionalNumber`, `optionalBoolean`
-- Range and length validation utilities
-
-### New Test Tools
-- **echo**: Test parameter passing with optional formatting
-- **serverInfo**: Inspect server configuration and capabilities
-
-## Stage 3 Features
-
-### Azure AD Authentication
-- **InteractiveBrowser authentication** - automatically opens browser for login
-- Built-in multi-tenant app registration (Client ID: f44ab954-9e38-4330-aa49-e93d73ab0ea6)
-- Default tenant: 'common' for multi-tenant support
-- Environment variable override for custom configurations
-- No secrets or manual configuration required
+### Stage 3: Azure AD Authentication
+- **InteractiveBrowser authentication**: Automatically opens browser for login
+- **Persistent token caching**: Tokens cached locally, survives server restarts
+- **Automatic token refresh**: No re-authentication needed
+- **Built-in multi-tenant app**: No configuration required (Client ID: f44ab954-9e38-4330-aa49-e93d73ab0ea6)
+- **Environment variable override**: Optional custom Azure AD app configuration
 
 ### Required Permissions
 The server requests the following Microsoft Graph API permissions during authentication:
@@ -206,53 +157,35 @@ The server requests the following Microsoft Graph API permissions during authent
 - **ExternalItem.Read.All** - Read external search items
 - **Files.Read.All** - Read files across SharePoint and OneDrive
 
-These permissions are required for full M365 Copilot integration in later stages.
+These permissions are required for M365 Copilot Retrieval API access.
 
-### Token Management
-- **Persistent token caching** - tokens are cached locally and survive server restarts
-- Automatic token refresh before expiration (5-minute buffer)
-- Support for multiple scopes
-- No need to re-authenticate on server restart if token is still valid
-- Token cache location: System credential manager (Windows) or keychain (macOS)
+### Stage 2: Error Handling & Utilities
+- **Custom error types**: MCPError, ValidationError, AuthenticationError, APIError
+- **Structured logging**: Configurable log levels (DEBUG, INFO, WARN, ERROR)
+- **Input validation**: Type-safe parameter validation functions
 
-### Authentication Tools
-- **authConfig**: View current authentication settings (diagnostic tool)
-- **authTest**: Manually retry authentication (diagnostic/troubleshooting tool only - not required for normal operation)
+## Configuration
 
-### Configuration
+### Default Setup (No Configuration Required)
+The server comes with a built-in multi-tenant Azure AD app - just start the server!
 
-The server comes with a default multi-tenant Azure AD app. For DeviceCode authentication, no configuration is needed!
+1. **First run**: Browser opens automatically for Microsoft 365 login
+2. **Subsequent runs**: Uses cached token (no browser popup)
+3. **Token management**: Automatic refresh before expiration
 
-**Automatic Authentication**:
-- ✅ **Server authenticates automatically on startup**
-- ✅ **All tools become available immediately after successful authentication**
-- ✅ **No manual steps required** - just start the server
-- ⚠️ If startup authentication fails, check server logs for error details
-
-**Quick Start (Fully Automatic)**:
-1. **First time**: Server starts and automatically opens browser for login
-2. Login with your Microsoft 365 account in browser
-3. Token is cached locally - subsequent startups use cached token
-4. **Next times**: Server starts and uses cached token automatically (no browser popup)
-5. Token auto-refreshes before expiration - no manual intervention needed
-
-**Using Your Own App** (Optional):
-If you want to use your own Azure AD app registration, create a `.env` file:
+### Custom Azure AD App (Optional)
+To use your own Azure AD app, create a `.env` file:
 ```bash
-# Optional - Override default client ID
 AZURE_CLIENT_ID=your-client-id
-
-# Optional - Override for single-tenant
-AZURE_TENANT_ID=your-tenant-id
+AZURE_TENANT_ID=your-tenant-id  # Optional, defaults to 'common'
+LOG_LEVEL=DEBUG  # Optional, defaults to INFO
 ```
 
 ## Next Stages
 
-- **Stage 4**: Microsoft Graph API Test
-- **Stage 5**: M365 Copilot Retrieval API
-- **Stage 6**: M365 Copilot Search API
-- **Stage 7**: M365 Copilot Chat API
-- **Stage 8**: Production Polish
+- **Stage 5**: M365 Copilot Search API
+- **Stage 6**: M365 Copilot Chat API
+- **Stage 7**: Production Polish
 
 ## Troubleshooting
 
