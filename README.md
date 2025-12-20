@@ -2,9 +2,9 @@
 
 An MCP (Model Context Protocol) server that integrates with Microsoft 365 Copilot APIs, providing access to Retrieval, Search, and Chat capabilities.
 
-## Current Status: Stage 1 - Minimal MCP Server Foundation
+## Current Status: Stage 2 - Enhanced Tools & Error Handling
 
-This is the initial stage with basic MCP server functionality to verify connectivity with Claude Code CLI.
+Building on Stage 1, this stage adds enhanced error handling, logging, input validation, and additional test tools.
 
 ## Prerequisites
 
@@ -55,7 +55,7 @@ claude mcp list
 
 You should see `m365-copilot` in the list with status "connected".
 
-## Available Tools (Stage 1)
+## Available Tools
 
 ### hello
 
@@ -66,6 +66,28 @@ A simple test tool that echoes back a greeting message.
 
 **Example usage:**
 Ask Claude: "Use the hello tool to greet John"
+
+### echo
+
+Echoes back the provided message with optional formatting. Useful for testing parameter passing and validation.
+
+**Parameters:**
+- `message` (string, required): The message to echo back
+- `uppercase` (boolean, optional): Convert message to uppercase (default: false)
+- `prefix` (string, optional): Optional prefix to add before the message
+
+**Example usage:**
+- Ask Claude: "Use the echo tool with message 'Hello World'"
+- Ask Claude: "Use the echo tool with message 'test', uppercase true, and prefix 'OUTPUT:'"
+
+### serverInfo
+
+Returns information about the MCP server including version, capabilities, and available utilities.
+
+**Parameters:** None
+
+**Example usage:**
+Ask Claude: "Use the serverInfo tool to show server information"
 
 ## Development
 
@@ -92,17 +114,46 @@ npm run build
 m365copilot-mcp/
 ├── src/
 │   ├── index.ts              # Main entry point with stdio transport
-│   └── server.ts             # MCP server initialization and tools
+│   ├── server.ts             # MCP server initialization and tools
+│   └── utils/                # Utility modules (Stage 2+)
+│       ├── logger.ts         # Logging utilities
+│       ├── errors.ts         # Error handling utilities
+│       └── validation.ts     # Input validation helpers
 ├── build/                    # Compiled JavaScript (generated)
+├── .github/
+│   └── copilot-instructions.md  # GitHub Copilot instructions
 ├── package.json              # Dependencies and scripts
 ├── tsconfig.json             # TypeScript configuration
 ├── .gitignore                # Git ignore rules
+├── CLAUDE.md                 # Development guide for Claude Code
 └── README.md                 # This file
 ```
 
+## Stage 2 Features
+
+### Enhanced Error Handling
+- Custom error types: `MCPError`, `ValidationError`, `AuthenticationError`, `APIError`, `ConfigurationError`
+- Structured error responses with error codes and details
+- Proper error formatting for MCP protocol
+
+### Logging System
+- Configurable log levels (DEBUG, INFO, WARN, ERROR)
+- Structured logging with timestamps and context
+- Logs to stderr to avoid stdio protocol interference
+- Environment variable support: `LOG_LEVEL` (DEBUG, INFO, WARN, ERROR)
+
+### Input Validation
+- Type-safe parameter validation functions
+- Required parameter helpers: `requireString`, `requireNumber`, `requireBoolean`, `requireArray`, `requireObject`, `requireEnum`
+- Optional parameter helpers: `optionalString`, `optionalNumber`, `optionalBoolean`
+- Range and length validation utilities
+
+### New Test Tools
+- **echo**: Test parameter passing with optional formatting
+- **serverInfo**: Inspect server configuration and capabilities
+
 ## Next Stages
 
-- **Stage 2**: Enhanced Tools & Error Handling
 - **Stage 3**: Azure Identity Integration
 - **Stage 4**: Microsoft Graph API Test
 - **Stage 5**: M365 Copilot Retrieval API

@@ -2,6 +2,7 @@
 
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { createServer } from './server.js';
+import { info, error as logError, setLogLevel, LogLevel } from './utils/logger.js';
 
 /**
  * Main entry point for the M365 Copilot MCP Server
@@ -9,6 +10,14 @@ import { createServer } from './server.js';
  */
 async function main() {
   try {
+    // Set log level from environment variable (default: INFO)
+    const logLevelEnv = process.env.LOG_LEVEL?.toUpperCase();
+    if (logLevelEnv && logLevelEnv in LogLevel) {
+      setLogLevel(LogLevel[logLevelEnv as keyof typeof LogLevel]);
+    }
+
+    info('Initializing M365 Copilot MCP Server');
+
     // Create the MCP server instance
     const server = createServer();
 
@@ -18,11 +27,10 @@ async function main() {
     // Connect server to transport
     await server.connect(transport);
 
-    // Log server start (to stderr so it doesn't interfere with stdio protocol)
-    console.error('M365 Copilot MCP Server started successfully');
-    console.error('Waiting for client connection...');
+    info('M365 Copilot MCP Server started successfully');
+    info('Waiting for client connection...');
   } catch (error) {
-    console.error('Failed to start M365 Copilot MCP Server:', error);
+    logError('Failed to start M365 Copilot MCP Server', error);
     process.exit(1);
   }
 }
