@@ -6,6 +6,7 @@
 import {
   ClientSecretCredential,
   DeviceCodeCredential,
+  InteractiveBrowserCredential,
   ManagedIdentityCredential,
   TokenCredential,
   AccessToken,
@@ -16,7 +17,7 @@ import { AuthenticationError, ConfigurationError } from '../utils/errors.js';
 /**
  * Authentication method types
  */
-export type AuthMethod = 'ClientSecret' | 'DeviceCode' | 'ManagedIdentity';
+export type AuthMethod = 'ClientSecret' | 'DeviceCode' | 'InteractiveBrowser' | 'ManagedIdentity';
 
 /**
  * Azure AD configuration interface
@@ -57,7 +58,7 @@ export class AuthenticationManager {
       tenantId: process.env.AZURE_TENANT_ID || DEFAULT_TENANT_ID,
       clientId: process.env.AZURE_CLIENT_ID || DEFAULT_CLIENT_ID,
       clientSecret: process.env.AZURE_CLIENT_SECRET,
-      authMethod: (process.env.AUTH_METHOD as AuthMethod) || 'DeviceCode',
+      authMethod: (process.env.AUTH_METHOD as AuthMethod) || 'InteractiveBrowser',
     };
   }
 
@@ -109,6 +110,23 @@ export class AuthenticationManager {
             },
           });
           info('Initialized DeviceCodeCredential');
+          break;
+
+        case 'InteractiveBrowser':
+          if (!tenantId || !clientId) {
+            throw new ConfigurationError(
+              'Missing required Azure AD configuration for InteractiveBrowser auth',
+              {
+                hasTenantId: !!tenantId,
+                hasClientId: !!clientId,
+              }
+            );
+          }
+          this.credential = new InteractiveBrowserCredential({
+            tenantId,
+            clientId,
+          });
+          info('Initialized InteractiveBrowserCredential');
           break;
 
         case 'ManagedIdentity':

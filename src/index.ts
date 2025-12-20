@@ -7,16 +7,27 @@ import { getAuthManager, setAuthenticationState } from './auth/identity.js';
 
 /**
  * Initialize and test authentication on server startup
+ * For DeviceCode method, skip auto-authentication to avoid blocking server startup
  */
 async function initializeAuthentication(): Promise<void> {
   const authManager = getAuthManager();
+  const config = authManager.getConfig();
 
   if (!authManager.isConfigured()) {
     warn('Authentication not configured. Using default DeviceCode method.');
-    warn('To configure: Set environment variables AZURE_TENANT_ID, AZURE_CLIENT_ID, etc.');
-    warn('See .env.example for details.');
   }
 
+  // Skip auto-authentication for DeviceCode to avoid blocking server startup
+  // DeviceCode requires manual user interaction which would hang the server
+  if (config.authMethod === 'DeviceCode') {
+    info('DeviceCode authentication method detected - skipping auto-authentication on startup');
+    info('Please use the authTest tool to authenticate interactively');
+    setAuthenticationState(false);
+    return;
+  }
+
+  // For other auth methods (ClientSecret, InteractiveBrowser, ManagedIdentity), attempt auto-authentication
+  // InteractiveBrowser will open a browser automatically which is non-blocking
   try {
     info('Initializing authentication...');
     await authManager.initialize();
