@@ -4,10 +4,7 @@
  */
 
 import {
-  ClientSecretCredential,
-  DeviceCodeCredential,
   InteractiveBrowserCredential,
-  ManagedIdentityCredential,
   TokenCredential,
   AccessToken,
   TokenCachePersistenceOptions,
@@ -21,7 +18,7 @@ import * as os from 'os';
 /**
  * Authentication method types
  */
-export type AuthMethod = 'ClientSecret' | 'DeviceCode' | 'InteractiveBrowser' | 'ManagedIdentity';
+export type AuthMethod = 'InteractiveBrowser';
 
 /**
  * Azure AD configuration interface
@@ -75,81 +72,25 @@ export class AuthenticationManager {
     info('Initializing authentication', { authMethod });
 
     try {
-      switch (authMethod) {
-        case 'ClientSecret':
-          if (!tenantId || !clientId || !clientSecret) {
-            throw new ConfigurationError(
-              'Missing required Azure AD configuration for ClientSecret auth',
-              {
-                hastenantId: !!tenantId,
-                hasClientId: !!clientId,
-                hasClientSecret: !!clientSecret,
-              }
-            );
+      // Only InteractiveBrowser is supported
+      if (!tenantId || !clientId) {
+        throw new ConfigurationError(
+          'Missing required Azure AD configuration for InteractiveBrowser auth',
+          {
+            hasTenantId: !!tenantId,
+            hasClientId: !!clientId,
           }
-          this.credential = new ClientSecretCredential(tenantId, clientId, clientSecret);
-          info('Initialized ClientSecretCredential');
-          break;
-
-        case 'DeviceCode':
-          if (!tenantId || !clientId) {
-            throw new ConfigurationError(
-              'Missing required Azure AD configuration for DeviceCode auth',
-              {
-                hasTenantId: !!tenantId,
-                hasClientId: !!clientId,
-              }
-            );
-          }
-          this.credential = new DeviceCodeCredential({
-            tenantId,
-            clientId,
-            userPromptCallback: (info) => {
-              console.error('\n' + '='.repeat(60));
-              console.error('DEVICE CODE AUTHENTICATION');
-              console.error('='.repeat(60));
-              console.error(`\nPlease visit: ${info.verificationUri}`);
-              console.error(`\nEnter code: ${info.userCode}`);
-              console.error('\n' + '='.repeat(60) + '\n');
-            },
-          });
-          info('Initialized DeviceCodeCredential');
-          break;
-
-        case 'InteractiveBrowser':
-          if (!tenantId || !clientId) {
-            throw new ConfigurationError(
-              'Missing required Azure AD configuration for InteractiveBrowser auth',
-              {
-                hasTenantId: !!tenantId,
-                hasClientId: !!clientId,
-              }
-            );
-          }
-          this.credential = new InteractiveBrowserCredential({
-            tenantId,
-            clientId,
-            tokenCachePersistenceOptions: {
-              enabled: true,
-              name: 'm365-copilot-mcp-cache',
-            },
-          });
-          info('Initialized InteractiveBrowserCredential with persistent token cache');
-          break;
-
-        case 'ManagedIdentity':
-          if (clientId) {
-            this.credential = new ManagedIdentityCredential(clientId);
-            info('Initialized ManagedIdentityCredential with client ID');
-          } else {
-            this.credential = new ManagedIdentityCredential();
-            info('Initialized ManagedIdentityCredential (system-assigned)');
-          }
-          break;
-
-        default:
-          throw new ConfigurationError(`Unknown auth method: ${authMethod}`);
+        );
       }
+      this.credential = new InteractiveBrowserCredential({
+        tenantId,
+        clientId,
+        tokenCachePersistenceOptions: {
+          enabled: true,
+          name: 'm365-copilot-mcp-cache',
+        },
+      });
+      info('Initialized InteractiveBrowserCredential with persistent token cache');
     } catch (error) {
       logError('Failed to initialize authentication', error);
       throw error;
@@ -243,19 +184,9 @@ export class AuthenticationManager {
    * Check if authentication is configured
    */
   public isConfigured(): boolean {
-    const { tenantId, clientId, clientSecret, authMethod } = this.config;
-
-    switch (authMethod) {
-      case 'ClientSecret':
-        return !!(tenantId && clientId && clientSecret);
-      case 'DeviceCode':
-      case 'InteractiveBrowser':
-        return !!(tenantId && clientId);
-      case 'ManagedIdentity':
-        return true; // Managed Identity doesn't require explicit config
-      default:
-        return false;
-    }
+    const { tenantId, clientId } = this.config;
+    // InteractiveBrowser only requires tenantId and clientId
+    return !!(tenantId && clientId);
   }
 }
 

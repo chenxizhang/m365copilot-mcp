@@ -174,8 +174,7 @@ export function createServer(): Server {
             authentication: {
               configured: authManager.isConfigured(),
               authenticated: isAuthenticationReady(),
-              methods: ['InteractiveBrowser', 'DeviceCode', 'ClientSecret', 'ManagedIdentity'],
-              defaultMethod: 'InteractiveBrowser',
+              method: 'InteractiveBrowser',
               defaultClientId: 'f44ab954-9e38-4330-aa49-e93d73ab0ea6',
               defaultTenantId: 'common',
               enforcementPolicy: 'All tools except authTest require authentication',

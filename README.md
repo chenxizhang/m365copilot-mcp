@@ -181,10 +181,11 @@ m365copilot-mcp/
 ## Stage 3 Features
 
 ### Azure AD Authentication
-- Multiple authentication methods: ClientSecret, DeviceCode, ManagedIdentity
+- **InteractiveBrowser authentication** - automatically opens browser for login
 - Built-in multi-tenant app registration (Client ID: f44ab954-9e38-4330-aa49-e93d73ab0ea6)
 - Default tenant: 'common' for multi-tenant support
 - Environment variable override for custom configurations
+- No secrets or manual configuration required
 
 ### Token Management
 - **Persistent token caching** - tokens are cached locally and survive server restarts
@@ -207,27 +208,21 @@ The server comes with a default multi-tenant Azure AD app. For DeviceCode authen
 - ✅ **No manual steps required** - just start the server
 - ⚠️ If startup authentication fails, check server logs for error details
 
-**Quick Start (InteractiveBrowser - Fully Automatic)**:
+**Quick Start (Fully Automatic)**:
 1. **First time**: Server starts and automatically opens browser for login
 2. Login with your Microsoft 365 account in browser
 3. Token is cached locally - subsequent startups use cached token
 4. **Next times**: Server starts and uses cached token automatically (no browser popup)
 5. Token auto-refreshes before expiration - no manual intervention needed
 
-**Using Your Own App**:
-Create a `.env` file based on `.env.example`:
+**Using Your Own App** (Optional):
+If you want to use your own Azure AD app registration, create a `.env` file:
 ```bash
 # Optional - Override default client ID
 AZURE_CLIENT_ID=your-client-id
 
 # Optional - Override for single-tenant
 AZURE_TENANT_ID=your-tenant-id
-
-# Required for ClientSecret method
-AZURE_CLIENT_SECRET=your-secret
-
-# Auth method (DeviceCode, ClientSecret, or ManagedIdentity)
-AUTH_METHOD=DeviceCode
 ```
 
 ## Next Stages

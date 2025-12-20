@@ -7,7 +7,6 @@ import { getAuthManager, setAuthenticationState } from './auth/identity.js';
 
 /**
  * Initialize and test authentication on server startup
- * For DeviceCode method, skip auto-authentication to avoid blocking server startup
  */
 async function initializeAuthentication(): Promise<void> {
   const authManager = getAuthManager();
@@ -18,16 +17,7 @@ async function initializeAuthentication(): Promise<void> {
     info(`Authentication method: ${config.authMethod}`);
   }
 
-  // Skip auto-authentication for DeviceCode to avoid blocking server startup
-  // DeviceCode requires manual user interaction which would hang the server
-  if (config.authMethod === 'DeviceCode') {
-    warn('DeviceCode authentication method requires manual interaction - cannot auto-authenticate on startup');
-    warn('This authentication method is not recommended for automatic startup. Consider using InteractiveBrowser instead.');
-    setAuthenticationState(false);
-    return;
-  }
-
-  // For other auth methods (ClientSecret, InteractiveBrowser, ManagedIdentity), attempt auto-authentication
+  // Attempt auto-authentication for all supported methods
   // InteractiveBrowser will use cached token if available, or open browser if needed
   try {
     info('Initializing authentication...');
