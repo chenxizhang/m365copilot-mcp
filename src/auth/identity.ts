@@ -90,6 +90,7 @@ export class AuthenticationManager {
       this.credential = new InteractiveBrowserCredential({
         tenantId,
         clientId,
+        redirectUri: 'https://login.microsoftonline.com/common/oauth2/nativeclient',
         tokenCachePersistenceOptions: {
           enabled: true,
           name: 'm365-copilot-mcp-cache',
