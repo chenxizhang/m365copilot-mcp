@@ -249,6 +249,7 @@ export class AuthenticationManager {
       case 'ClientSecret':
         return !!(tenantId && clientId && clientSecret);
       case 'DeviceCode':
+      case 'InteractiveBrowser':
         return !!(tenantId && clientId);
       case 'ManagedIdentity':
         return true; // Managed Identity doesn't require explicit config
