@@ -8,7 +8,10 @@ import {
   TokenCredential,
   AccessToken,
   TokenCachePersistenceOptions,
+  AuthenticationRecord,
   useIdentityPlugin,
+  serializeAuthenticationRecord,
+  deserializeAuthenticationRecord,
 } from '@azure/identity';
 import { cachePersistencePlugin } from '@azure/identity-cache-persistence';
 import { info, warn, error as logError } from '../utils/logger.js';
@@ -42,9 +45,55 @@ export class AuthenticationManager {
   private credential: TokenCredential | null = null;
   private config: AzureConfig;
   private tokenCache: Map<string, { token: AccessToken; expiresAt: number }> = new Map();
+  private authRecord: AuthenticationRecord | null = null;
 
   constructor(config?: AzureConfig) {
     this.config = config || this.loadConfigFromEnv();
+  }
+
+  /**
+   * Get the path to the authentication record file
+   */
+  private getAuthRecordPath(): string {
+    const homeDir = os.homedir();
+    const authDir = path.join(homeDir, '.IdentityService');
+    if (!fs.existsSync(authDir)) {
+      fs.mkdirSync(authDir, { recursive: true });
+    }
+    return path.join(authDir, 'm365-copilot-mcp-auth.json');
+  }
+
+  /**
+   * Load authentication record from disk
+   */
+  private loadAuthRecord(): AuthenticationRecord | null {
+    try {
+      const authRecordPath = this.getAuthRecordPath();
+      if (fs.existsSync(authRecordPath)) {
+        const data = fs.readFileSync(authRecordPath, 'utf-8');
+        this.authRecord = deserializeAuthenticationRecord(data);
+        info('Loaded authentication record from disk');
+        return this.authRecord;
+      }
+    } catch (error) {
+      logError('Failed to load authentication record', error);
+    }
+    return null;
+  }
+
+  /**
+   * Save authentication record to disk
+   */
+  private saveAuthRecord(authRecord: AuthenticationRecord): void {
+    try {
+      const authRecordPath = this.getAuthRecordPath();
+      const serialized = serializeAuthenticationRecord(authRecord);
+      fs.writeFileSync(authRecordPath, serialized, 'utf-8');
+      this.authRecord = authRecord;
+      info('Saved authentication record to disk');
+    } catch (error) {
+      logError('Failed to save authentication record', error);
+    }
   }
 
   /**
@@ -87,11 +136,19 @@ export class AuthenticationManager {
           }
         );
       }
+
+      // Try to load authentication record from disk
+      const authRecord = this.loadAuthRecord();
+      if (authRecord) {
+        info('Found existing authentication record - will attempt silent authentication');
+      }
+
       this.credential = new InteractiveBrowserCredential({
         tenantId,
         clientId,
         // redirectUri is not needed for Node.js - it automatically starts a local HTTP server
         // User must configure http://localhost in Azure AD app registration
+        authenticationRecord: authRecord || undefined,
         tokenCachePersistenceOptions: {
           enabled: true,
           name: 'm365-copilot-mcp-cache',
@@ -204,6 +261,40 @@ export class AuthenticationManager {
     // InteractiveBrowser only requires tenantId and clientId
     return !!(tenantId && clientId);
   }
+
+  /**
+   * Check if we have an authentication record
+   */
+  public hasAuthRecord(): boolean {
+    return this.authRecord !== null;
+  }
+
+  /**
+   * Ensure we have an authentication record (for silent authentication on restart)
+   * This method calls authenticate() which will get the auth record without
+   * requiring user interaction if they're already authenticated
+   */
+  public async ensureAuthRecord(scopes: string[]): Promise<void> {
+    if (this.authRecord) {
+      return; // Already have it
+    }
+
+    if (!this.credential || !(this.credential instanceof InteractiveBrowserCredential)) {
+      throw new AuthenticationError('Credential not initialized or not InteractiveBrowserCredential');
+    }
+
+    try {
+      info('Obtaining authentication record for silent future authentication');
+      const authRecord = await this.credential.authenticate(scopes);
+      if (authRecord) {
+        this.saveAuthRecord(authRecord);
+        info('Authentication record obtained and saved');
+      }
+    } catch (error) {
+      // Non-fatal: we can still work without authRecord, just won't be silent on restart
+      logError('Failed to obtain authentication record (non-fatal)', error);
+    }
+  }
 }
 
 // Export singleton instance
@@ -243,6 +334,7 @@ export function isAuthenticationReady(): boolean {
  * 1. Check if already authenticated (fast path)
  * 2. If not, initialize auth manager and get token
  * 3. Token will come from cache if available, or prompt user if needed
+ * 4. On first authentication, save AuthenticationRecord for silent auth on restart
  *
  * Per MCP specification for STDIO transport, authentication should be
  * lazy and use environment credentials/cached tokens when available.
@@ -270,6 +362,13 @@ export async function requireAuthentication(): Promise<void> {
     info('Obtaining access token (will use cached token if available)');
     // This will use cached token if available, or prompt user to login
     await authManager.getAccessToken(['https://graph.microsoft.com/.default']);
+
+    // If this is the first time (no auth record), call authenticate to get the record
+    // This ensures we can do silent authentication on next restart
+    if (!authManager.hasAuthRecord()) {
+      info('First-time authentication - obtaining authentication record for future silent auth');
+      await authManager.ensureAuthRecord(['https://graph.microsoft.com/.default']);
+    }
 
     // Mark as authenticated
     isAuthenticated = true;
