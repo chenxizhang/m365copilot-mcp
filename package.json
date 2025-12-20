@@ -1,0 +1,27 @@
+{
+  "name": "m365-copilot-mcp",
+  "version": "0.1.0",
+  "description": "MCP server for Microsoft 365 Copilot APIs integration",
+  "main": "build/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "start": "node build/index.js"
+  },
+  "keywords": [
+    "mcp",
+    "microsoft-365",
+    "copilot",
+    "graph-api"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "typescript": "^5.3.3"
+  }
+}
