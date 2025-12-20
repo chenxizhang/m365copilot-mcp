@@ -2,9 +2,9 @@
 
 An MCP (Model Context Protocol) server that integrates with Microsoft 365 Copilot APIs, providing access to Retrieval, Search, and Chat capabilities.
 
-## Current Status: Stage 2 - Enhanced Tools & Error Handling
+## Current Status: Stage 3 - Azure Identity Integration
 
-Building on Stage 1, this stage adds enhanced error handling, logging, input validation, and additional test tools.
+Building on Stages 1 and 2, this stage adds Azure AD authentication support with multiple authentication methods and token management.
 
 ## Prerequisites
 
@@ -89,6 +89,26 @@ Returns information about the MCP server including version, capabilities, and av
 **Example usage:**
 Ask Claude: "Use the serverInfo tool to show server information"
 
+### authConfig
+
+Returns current Azure AD authentication configuration (without secrets). Shows tenant ID, client ID, and auth method.
+
+**Parameters:** None
+
+**Example usage:**
+Ask Claude: "Use the authConfig tool to show authentication configuration"
+
+### authTest
+
+Tests Azure AD authentication by attempting to obtain an access token. Initializes authentication if not already done.
+
+**Parameters:**
+- `scopes` (array of strings, optional): Scopes to request (default: `["https://graph.microsoft.com/.default"]`)
+
+**Example usage:**
+- Ask Claude: "Use the authTest tool to test authentication"
+- Ask Claude: "Use the authTest tool with scopes ['https://graph.microsoft.com/User.Read']"
+
 ## Development
 
 ### Build and Watch Mode
@@ -115,13 +135,16 @@ m365copilot-mcp/
 ├── src/
 │   ├── index.ts              # Main entry point with stdio transport
 │   ├── server.ts             # MCP server initialization and tools
-│   └── utils/                # Utility modules (Stage 2+)
-│       ├── logger.ts         # Logging utilities
-│       ├── errors.ts         # Error handling utilities
-│       └── validation.ts     # Input validation helpers
+│   ├── utils/                # Utility modules (Stage 2+)
+│   │   ├── logger.ts         # Logging utilities
+│   │   ├── errors.ts         # Error handling utilities
+│   │   └── validation.ts     # Input validation helpers
+│   └── auth/                 # Authentication modules (Stage 3+)
+│       └── identity.ts       # Azure Identity integration
 ├── build/                    # Compiled JavaScript (generated)
 ├── .github/
 │   └── copilot-instructions.md  # GitHub Copilot instructions
+├── .env.example              # Example environment configuration
 ├── package.json              # Dependencies and scripts
 ├── tsconfig.json             # TypeScript configuration
 ├── .gitignore                # Git ignore rules
@@ -152,9 +175,50 @@ m365copilot-mcp/
 - **echo**: Test parameter passing with optional formatting
 - **serverInfo**: Inspect server configuration and capabilities
 
+## Stage 3 Features
+
+### Azure AD Authentication
+- Multiple authentication methods: ClientSecret, DeviceCode, ManagedIdentity
+- Built-in multi-tenant app registration (Client ID: f44ab954-9e38-4330-aa49-e93d73ab0ea6)
+- Default tenant: 'common' for multi-tenant support
+- Environment variable override for custom configurations
+
+### Token Management
+- Automatic token caching with expiration handling
+- Token refresh before expiration (5-minute buffer)
+- Support for multiple scopes
+
+### Authentication Tools
+- **authConfig**: View current authentication settings
+- **authTest**: Test authentication and obtain access tokens
+
+### Configuration
+
+The server comes with a default multi-tenant Azure AD app. For DeviceCode authentication, no configuration is needed!
+
+**Quick Start (DeviceCode - No secrets needed)**:
+1. Set `AUTH_METHOD=DeviceCode` in `.env` (or leave default)
+2. Use `authTest` tool
+3. Follow the device code prompt to authenticate
+
+**Using Your Own App**:
+Create a `.env` file based on `.env.example`:
+```bash
+# Optional - Override default client ID
+AZURE_CLIENT_ID=your-client-id
+
+# Optional - Override for single-tenant
+AZURE_TENANT_ID=your-tenant-id
+
+# Required for ClientSecret method
+AZURE_CLIENT_SECRET=your-secret
+
+# Auth method (DeviceCode, ClientSecret, or ManagedIdentity)
+AUTH_METHOD=DeviceCode
+```
+
 ## Next Stages
 
-- **Stage 3**: Azure Identity Integration
 - **Stage 4**: Microsoft Graph API Test
 - **Stage 5**: M365 Copilot Retrieval API
 - **Stage 6**: M365 Copilot Search API

@@ -21,8 +21,8 @@ The project is structured for multi-agent parallel development:
 ### Progressive Enhancement
 Development follows a staged approach:
 1. **Stage 1**: Minimal MCP Server Foundation (COMPLETED)
-2. **Stage 2**: Enhanced Tools & Error Handling (IN PROGRESS)
-3. **Stage 3**: Azure Identity Integration
+2. **Stage 2**: Enhanced Tools & Error Handling (COMPLETED)
+3. **Stage 3**: Azure Identity Integration (COMPLETED)
 4. **Stage 4**: Microsoft Graph API Test
 5. **Stage 5**: M365 Copilot Retrieval API
 6. **Stage 6**: M365 Copilot Search API
@@ -86,18 +86,25 @@ When task is complete:
 
 ## Stage-Specific Guidelines
 
-### Stage 2: Enhanced Tools & Error Handling
-Current focus on:
-- Creating reusable utility modules for logging, error handling, and validation
-- Adding more test tools to verify functionality
-- Improving error messages and debugging capabilities
-- Establishing patterns for future stages
+### Stage 2: Enhanced Tools & Error Handling (COMPLETED)
+Completed features:
+- Created reusable utility modules for logging, error handling, and validation
+- Added test tools (echo, serverInfo) to verify functionality
+- Improved error messages and debugging capabilities
+- Established patterns for future stages
 
-### Stage 3: Azure Identity Integration
+### Stage 3: Azure Identity Integration (COMPLETED)
+Completed features:
+- Implemented Azure AD authentication with multiple methods (ClientSecret, DeviceCode, ManagedIdentity)
+- Added token management with caching and auto-refresh
+- Created default multi-tenant app configuration with override capability
+- Added authentication tools (authConfig, authTest)
+
+### Stage 4: Microsoft Graph API Test
 Will focus on:
-- Setting up Azure AD authentication
-- Implementing token management
-- Environment configuration for credentials
+- Creating Microsoft Graph API client
+- Testing basic Graph API calls
+- Implementing error handling for API failures
 
 ### Stage 4-7: API Integration
 Each stage will:
@@ -172,13 +179,13 @@ Use conventional commit format:
 
 ### Production Dependencies
 - `@modelcontextprotocol/sdk`: MCP server implementation
+- `@azure/identity`: Azure AD authentication (Stage 3+)
 
 ### Development Dependencies
 - `typescript`: Type checking and compilation
 - `@types/node`: Node.js type definitions
 
-### Future Dependencies (Stage 3+)
-- `@azure/identity`: Azure AD authentication
+### Future Dependencies (Stage 4+)
 - `@microsoft/microsoft-graph-client`: Graph API client
 - Additional packages as needed per stage
 
@@ -187,14 +194,23 @@ Use conventional commit format:
 ### Stage 1-2
 No environment configuration required.
 
-### Stage 3+
-Will require:
-- Azure AD tenant ID
-- Azure AD client ID
-- Azure AD client secret
-- M365 Copilot API endpoints
+### Stage 3 (Current)
+Optional environment configuration via `.env` file:
+- `AZURE_TENANT_ID`: Override default 'common' tenant (optional)
+- `AZURE_CLIENT_ID`: Override default multi-tenant app (optional)
+- `AZURE_CLIENT_SECRET`: Required for ClientSecret auth method only
+- `AUTH_METHOD`: Choose authentication method (DeviceCode, ClientSecret, ManagedIdentity)
+- `LOG_LEVEL`: Set logging level (DEBUG, INFO, WARN, ERROR)
 
-Configuration will be managed through `.env` file (not committed to git).
+**Default Configuration:**
+- ClientID: `f44ab954-9e38-4330-aa49-e93d73ab0ea6` (built-in multi-tenant app)
+- TenantID: `common` (multi-tenant support)
+- AuthMethod: `DeviceCode` (no secrets needed)
+
+### Stage 4+
+Will add:
+- M365 Copilot API endpoints
+- Additional API-specific configuration
 
 ## Troubleshooting
 

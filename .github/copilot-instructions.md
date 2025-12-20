@@ -10,8 +10,8 @@ This is an MCP (Model Context Protocol) server that integrates Microsoft 365 Cop
 - M365 Copilot Search
 - M365 Copilot Chat
 
-**Current Stage:** Stage 2 - Enhanced Tools & Error Handling
-**Version:** 0.2.0
+**Current Stage:** Stage 3 - Azure Identity Integration
+**Version:** 0.3.0
 **Language:** TypeScript with ES modules
 
 ## Code Organization
@@ -21,14 +21,15 @@ This is an MCP (Model Context Protocol) server that integrates Microsoft 365 Cop
 src/
 ├── index.ts              # Entry point with stdio transport
 ├── server.ts             # MCP server setup and tool handlers
-└── utils/                # Shared utilities
-    ├── logger.ts         # Logging with stderr output
-    ├── errors.ts         # Custom error types
-    └── validation.ts     # Input validation helpers
+├── utils/                # Shared utilities
+│   ├── logger.ts         # Logging with stderr output
+│   ├── errors.ts         # Custom error types
+│   └── validation.ts     # Input validation helpers
+└── auth/                 # Authentication modules (Stage 3+)
+    └── identity.ts       # Azure Identity integration
 ```
 
 Future additions will include:
-- `src/auth/` - Authentication modules (Stage 3+)
 - `src/tools/` - Tool implementations organized by feature (Stage 4+)
 
 ### Key Principles
@@ -244,22 +245,26 @@ import { requireString } from './utils/validation.js';
 
 ### Current
 - `@modelcontextprotocol/sdk@^1.0.4` - MCP protocol implementation
+- `@azure/identity@^4.13.0` - Azure AD authentication (Stage 3+)
 - `typescript@^5.3.3` - Type checking and compilation
 - `@types/node@^20.11.0` - Node.js type definitions
 
-### Planned (Stage 3+)
-- `@azure/identity` - Azure AD authentication
+### Planned (Stage 4+)
 - `@microsoft/microsoft-graph-client` - Graph API client
 
 ## Environment Variables
 
-### Current
+### Current (Stage 3)
 - `LOG_LEVEL` - Set logging level (DEBUG, INFO, WARN, ERROR)
+- `AZURE_TENANT_ID` - Azure AD tenant (optional, defaults to 'common')
+- `AZURE_CLIENT_ID` - Azure AD application (optional, uses built-in app)
+- `AZURE_CLIENT_SECRET` - Azure AD secret (required for ClientSecret method only)
+- `AUTH_METHOD` - Authentication method (DeviceCode, ClientSecret, or ManagedIdentity)
 
-### Planned (Stage 3+)
-- `AZURE_TENANT_ID` - Azure AD tenant
-- `AZURE_CLIENT_ID` - Azure AD application
-- `AZURE_CLIENT_SECRET` - Azure AD secret
+**Defaults:**
+- Client ID: `f44ab954-9e38-4330-aa49-e93d73ab0ea6` (multi-tenant app)
+- Tenant ID: `common` (multi-tenant support)
+- Auth Method: `DeviceCode` (no secrets required)
 
 ## Git Practices
 

@@ -7,6 +7,7 @@ import {
 import { logger, info, error as logError } from './utils/logger.js';
 import { formatErrorResponse, ValidationError } from './utils/errors.js';
 import { requireString, optionalString, optionalBoolean } from './utils/validation.js';
+import { getAuthManager } from './auth/identity.js';
 
 /**
  * Create and configure the MCP server
@@ -15,7 +16,7 @@ export function createServer(): Server {
   const server = new Server(
     {
       name: 'm365-copilot-mcp',
-      version: '0.2.0',
+      version: '0.3.0',
     },
     {
       capabilities: {
@@ -68,6 +69,28 @@ export function createServer(): Server {
       inputSchema: {
         type: 'object',
         properties: {},
+      },
+    },
+    {
+      name: 'authConfig',
+      description: 'Returns current Azure AD authentication configuration (without secrets). Shows tenant ID, client ID, and auth method.',
+      inputSchema: {
+        type: 'object',
+        properties: {},
+      },
+    },
+    {
+      name: 'authTest',
+      description: 'Tests Azure AD authentication by attempting to obtain an access token. Initializes authentication if not already done.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          scopes: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'Optional scopes to request (default: https://graph.microsoft.com/.default)',
+          },
+        },
       },
     },
   ];
@@ -124,10 +147,11 @@ export function createServer(): Server {
         }
 
         case 'serverInfo': {
+          const authManager = getAuthManager();
           const serverInfo = {
             name: 'm365-copilot-mcp',
-            version: '0.2.0',
-            stage: 'Stage 2 - Enhanced Tools & Error Handling',
+            version: '0.3.0',
+            stage: 'Stage 3 - Azure Identity Integration',
             capabilities: {
               tools: true,
               resources: false,
@@ -137,6 +161,12 @@ export function createServer(): Server {
               errorHandling: ['MCPError', 'ValidationError', 'AuthenticationError', 'APIError', 'ConfigurationError'],
               logging: ['debug', 'info', 'warn', 'error'],
               validation: ['requireString', 'requireNumber', 'requireBoolean', 'requireArray', 'requireObject', 'requireEnum'],
+            },
+            authentication: {
+              configured: authManager.isConfigured(),
+              methods: ['ClientSecret', 'DeviceCode', 'ManagedIdentity'],
+              defaultClientId: 'f44ab954-9e38-4330-aa49-e93d73ab0ea6',
+              defaultTenantId: 'common',
             },
             toolCount: tools.length,
             availableTools: tools.map(t => t.name),
@@ -150,6 +180,78 @@ export function createServer(): Server {
               },
             ],
           };
+        }
+
+        case 'authConfig': {
+          const authManager = getAuthManager();
+          const config = authManager.getConfig();
+          const authConfigInfo = {
+            configured: authManager.isConfigured(),
+            tenantId: config.tenantId,
+            clientId: config.clientId,
+            authMethod: config.authMethod,
+            note: 'Client secret is not displayed for security reasons',
+          };
+
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(authConfigInfo, null, 2),
+              },
+            ],
+          };
+        }
+
+        case 'authTest': {
+          const authManager = getAuthManager();
+
+          // Initialize if not already done
+          if (!authManager.isConfigured()) {
+            throw new ValidationError('Authentication not configured. Please set required environment variables.');
+          }
+
+          try {
+            await authManager.initialize();
+
+            const scopes = (args?.scopes as string[]) || ['https://graph.microsoft.com/.default'];
+            const success = await authManager.testAuthentication(scopes);
+
+            const result = {
+              success,
+              message: success
+                ? 'Authentication successful! Access token obtained.'
+                : 'Authentication failed. Check logs for details.',
+              config: authManager.getConfig(),
+              scopes,
+            };
+
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify(result, null, 2),
+                },
+              ],
+            };
+          } catch (error) {
+            const result = {
+              success: false,
+              message: 'Authentication test failed',
+              error: error instanceof Error ? error.message : String(error),
+              config: authManager.getConfig(),
+            };
+
+            return {
+              content: [
+                {
+                  type: 'text',
+                  text: JSON.stringify(result, null, 2),
+                },
+              ],
+              isError: true,
+            };
+          }
         }
 
         default:
