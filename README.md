@@ -184,9 +184,11 @@ m365copilot-mcp/
 - Environment variable override for custom configurations
 
 ### Token Management
-- Automatic token caching with expiration handling
-- Token refresh before expiration (5-minute buffer)
+- **Persistent token caching** - tokens are cached locally and survive server restarts
+- Automatic token refresh before expiration (5-minute buffer)
 - Support for multiple scopes
+- No need to re-authenticate on server restart if token is still valid
+- Token cache location: System credential manager (Windows) or keychain (macOS)
 
 ### Authentication Tools
 - **authConfig**: View current authentication settings
@@ -202,11 +204,12 @@ The server comes with a default multi-tenant Azure AD app. For DeviceCode authen
 - If startup authentication fails, use `authTest` tool to authenticate manually
 - Once authenticated, all other tools become available
 
-**Quick Start (DeviceCode - No secrets needed)**:
-1. Server auto-authenticates on startup using DeviceCode method (default)
-2. Follow the device code prompt in server logs if needed
-3. If startup auth fails, manually call `authTest` tool
-4. All other tools will be available after successful authentication
+**Quick Start (InteractiveBrowser - No secrets needed)**:
+1. **First time**: Server starts and automatically opens browser for login
+2. Login with your Microsoft 365 account in browser
+3. Token is cached locally - subsequent startups use cached token
+4. **Next times**: Server starts and uses cached token automatically (no browser popup)
+5. Token auto-refreshes before expiration - no manual intervention needed
 
 **Using Your Own App**:
 Create a `.env` file based on `.env.example`:

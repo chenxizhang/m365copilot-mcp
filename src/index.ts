@@ -14,7 +14,8 @@ async function initializeAuthentication(): Promise<void> {
   const config = authManager.getConfig();
 
   if (!authManager.isConfigured()) {
-    warn('Authentication not configured. Using default DeviceCode method.');
+    info('Using default authentication configuration');
+    info(`Authentication method: ${config.authMethod}`);
   }
 
   // Skip auto-authentication for DeviceCode to avoid blocking server startup
@@ -27,17 +28,19 @@ async function initializeAuthentication(): Promise<void> {
   }
 
   // For other auth methods (ClientSecret, InteractiveBrowser, ManagedIdentity), attempt auto-authentication
-  // InteractiveBrowser will open a browser automatically which is non-blocking
+  // InteractiveBrowser will use cached token if available, or open browser if needed
   try {
     info('Initializing authentication...');
+    info(`Using ${config.authMethod} authentication method`);
     await authManager.initialize();
 
-    info('Testing authentication...');
+    info('Attempting to authenticate (using cached token if available)...');
     const success = await authManager.testAuthentication();
 
     if (success) {
       setAuthenticationState(true);
-      info('✓ Authentication successful');
+      info('✓ Authentication successful - all tools are now available');
+      info('  Token has been cached and will be automatically refreshed');
     } else {
       setAuthenticationState(false);
       warn('✗ Authentication test failed - tools requiring authentication will not work');

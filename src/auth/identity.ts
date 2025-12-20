@@ -10,9 +10,13 @@ import {
   ManagedIdentityCredential,
   TokenCredential,
   AccessToken,
+  TokenCachePersistenceOptions,
 } from '@azure/identity';
 import { info, warn, error as logError } from '../utils/logger.js';
 import { AuthenticationError, ConfigurationError } from '../utils/errors.js';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as os from 'os';
 
 /**
  * Authentication method types
@@ -125,8 +129,12 @@ export class AuthenticationManager {
           this.credential = new InteractiveBrowserCredential({
             tenantId,
             clientId,
+            tokenCachePersistenceOptions: {
+              enabled: true,
+              name: 'm365-copilot-mcp-cache',
+            },
           });
-          info('Initialized InteractiveBrowserCredential');
+          info('Initialized InteractiveBrowserCredential with persistent token cache');
           break;
 
         case 'ManagedIdentity':
