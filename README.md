@@ -196,10 +196,17 @@ m365copilot-mcp/
 
 The server comes with a default multi-tenant Azure AD app. For DeviceCode authentication, no configuration is needed!
 
+**Authentication Enforcement**:
+- ⚠️ **All tools except `authTest` require authentication**
+- Server attempts authentication automatically on startup
+- If startup authentication fails, use `authTest` tool to authenticate manually
+- Once authenticated, all other tools become available
+
 **Quick Start (DeviceCode - No secrets needed)**:
-1. Set `AUTH_METHOD=DeviceCode` in `.env` (or leave default)
-2. Use `authTest` tool
-3. Follow the device code prompt to authenticate
+1. Server auto-authenticates on startup using DeviceCode method (default)
+2. Follow the device code prompt in server logs if needed
+3. If startup auth fails, manually call `authTest` tool
+4. All other tools will be available after successful authentication
 
 **Using Your Own App**:
 Create a `.env` file based on `.env.example`:

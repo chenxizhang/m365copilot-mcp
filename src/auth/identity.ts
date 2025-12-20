@@ -235,6 +235,9 @@ export class AuthenticationManager {
 // Export singleton instance
 let authManager: AuthenticationManager | null = null;
 
+// Global authentication state
+let isAuthenticated = false;
+
 /**
  * Get or create the singleton authentication manager instance
  */
@@ -250,4 +253,31 @@ export function getAuthManager(config?: AzureConfig): AuthenticationManager {
  */
 export function resetAuthManager(): void {
   authManager = null;
+  isAuthenticated = false;
+}
+
+/**
+ * Check if authentication has been successfully completed
+ */
+export function isAuthenticationReady(): boolean {
+  return isAuthenticated;
+}
+
+/**
+ * Set authentication state
+ */
+export function setAuthenticationState(state: boolean): void {
+  isAuthenticated = state;
+  info(`Authentication state changed: ${state ? 'authenticated' : 'not authenticated'}`);
+}
+
+/**
+ * Require authentication - throws error if not authenticated
+ */
+export function requireAuthentication(): void {
+  if (!isAuthenticated) {
+    throw new AuthenticationError(
+      'Authentication required. Please ensure the server is properly authenticated or call authTest tool to authenticate.'
+    );
+  }
 }

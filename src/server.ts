@@ -7,7 +7,7 @@ import {
 import { logger, info, error as logError } from './utils/logger.js';
 import { formatErrorResponse, ValidationError } from './utils/errors.js';
 import { requireString, optionalString, optionalBoolean } from './utils/validation.js';
-import { getAuthManager } from './auth/identity.js';
+import { getAuthManager, requireAuthentication, setAuthenticationState, isAuthenticationReady } from './auth/identity.js';
 
 /**
  * Create and configure the MCP server
@@ -111,6 +111,9 @@ export function createServer(): Server {
     try {
       switch (name) {
         case 'hello': {
+          // Require authentication for this tool
+          requireAuthentication();
+
           const userName = requireString(args?.name, 'name');
 
           return {
@@ -124,6 +127,9 @@ export function createServer(): Server {
         }
 
         case 'echo': {
+          // Require authentication for this tool
+          requireAuthentication();
+
           const message = requireString(args?.message, 'message');
           const uppercase = args?.uppercase === true;
           const prefix = optionalString(args?.prefix, 'prefix');
@@ -147,6 +153,9 @@ export function createServer(): Server {
         }
 
         case 'serverInfo': {
+          // Require authentication for this tool
+          requireAuthentication();
+
           const authManager = getAuthManager();
           const serverInfo = {
             name: 'm365-copilot-mcp',
@@ -164,9 +173,11 @@ export function createServer(): Server {
             },
             authentication: {
               configured: authManager.isConfigured(),
+              authenticated: isAuthenticationReady(),
               methods: ['ClientSecret', 'DeviceCode', 'ManagedIdentity'],
               defaultClientId: 'f44ab954-9e38-4330-aa49-e93d73ab0ea6',
               defaultTenantId: 'common',
+              enforcementPolicy: 'All tools except authTest require authentication',
             },
             toolCount: tools.length,
             availableTools: tools.map(t => t.name),
@@ -183,6 +194,9 @@ export function createServer(): Server {
         }
 
         case 'authConfig': {
+          // Require authentication for this tool
+          requireAuthentication();
+
           const authManager = getAuthManager();
           const config = authManager.getConfig();
           const authConfigInfo = {
@@ -204,6 +218,8 @@ export function createServer(): Server {
         }
 
         case 'authTest': {
+          // NOTE: authTest does NOT require authentication
+          // This is the tool used to authenticate
           const authManager = getAuthManager();
 
           // Initialize if not already done
@@ -217,13 +233,19 @@ export function createServer(): Server {
             const scopes = (args?.scopes as string[]) || ['https://graph.microsoft.com/.default'];
             const success = await authManager.testAuthentication(scopes);
 
+            // Update global authentication state based on result
+            setAuthenticationState(success);
+
             const result = {
               success,
               message: success
-                ? 'Authentication successful! Access token obtained.'
+                ? 'Authentication successful! All tools are now available.'
                 : 'Authentication failed. Check logs for details.',
               config: authManager.getConfig(),
               scopes,
+              note: success
+                ? 'Authentication state has been updated. You can now use all other tools.'
+                : 'Authentication failed. Please check your configuration and try again.',
             };
 
             return {
@@ -235,11 +257,15 @@ export function createServer(): Server {
               ],
             };
           } catch (error) {
+            // Authentication failed, update state
+            setAuthenticationState(false);
+
             const result = {
               success: false,
               message: 'Authentication test failed',
               error: error instanceof Error ? error.message : String(error),
               config: authManager.getConfig(),
+              note: 'Authentication state remains unauthenticated. Other tools will not work until authentication succeeds.',
             };
 
             return {
