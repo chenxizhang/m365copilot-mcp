@@ -90,7 +90,8 @@ export class AuthenticationManager {
       this.credential = new InteractiveBrowserCredential({
         tenantId,
         clientId,
-        redirectUri: 'https://login.microsoftonline.com/common/oauth2/nativeclient',
+        // redirectUri is not needed for Node.js - it automatically starts a local HTTP server
+        // User must configure http://localhost in Azure AD app registration
         tokenCachePersistenceOptions: {
           enabled: true,
           name: 'm365-copilot-mcp-cache',
