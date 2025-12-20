@@ -57,7 +57,7 @@ export class AuthenticationManager {
       tenantId: process.env.AZURE_TENANT_ID || DEFAULT_TENANT_ID,
       clientId: process.env.AZURE_CLIENT_ID || DEFAULT_CLIENT_ID,
       clientSecret: process.env.AZURE_CLIENT_SECRET,
-      authMethod: (process.env.AUTH_METHOD as AuthMethod) || 'ClientSecret',
+      authMethod: (process.env.AUTH_METHOD as AuthMethod) || 'DeviceCode',
     };
   }
 
