@@ -116,7 +116,9 @@ export class AuthenticationManager {
     }
 
     try {
-      info('Requesting new access token', { scopes });
+      info('Requesting new access token from Azure AD...', { scopes });
+      info('  This may open a browser window for interactive login');
+
       const tokenResponse = await this.credential.getToken(scopes);
 
       if (!tokenResponse) {
@@ -129,44 +131,51 @@ export class AuthenticationManager {
         expiresAt: tokenResponse.expiresOnTimestamp,
       });
 
-      info('Access token obtained successfully', {
+      info('✓ Access token obtained successfully', {
         scopes,
         expiresAt: new Date(tokenResponse.expiresOnTimestamp).toISOString(),
       });
 
       return tokenResponse.token;
     } catch (error) {
-      logError('Failed to get access token', error, { scopes });
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      const errorName = error instanceof Error ? error.name : 'Unknown';
+      logError('✗ Failed to get access token', error, {
+        scopes,
+        errorName,
+        errorMessage: errorMsg
+      });
       throw new AuthenticationError(
-        `Failed to obtain access token: ${error instanceof Error ? error.message : String(error)}`,
-        { scopes }
+        `Failed to obtain access token: ${errorMsg}`,
+        { scopes, errorName }
       );
     }
   }
 
-  /**
-   * Test authentication by attempting to get a token
-   */
-  public async testAuthentication(scopes?: string[]): Promise<boolean> {
-    const testScopes = scopes || ['https://graph.microsoft.com/.default'];
 
-    try {
-      info('Testing authentication', { scopes: testScopes });
-      await this.getAccessToken(testScopes);
-      info('Authentication test successful');
-      return true;
-    } catch (error) {
-      warn('Authentication test failed', { error });
-      return false;
-    }
+  /**
+   * Clear token cache (in-memory only)
+   */
+  public clearCache(): void {
+    info('Clearing in-memory token cache');
+    this.tokenCache.clear();
   }
 
   /**
-   * Clear token cache
+   * Get authentication status details for debugging
    */
-  public clearCache(): void {
-    info('Clearing token cache');
-    this.tokenCache.clear();
+  public getAuthStatus(): {
+    initialized: boolean;
+    configured: boolean;
+    credentialType: string | null;
+    cacheSize: number;
+  } {
+    return {
+      initialized: this.credential !== null,
+      configured: this.isConfigured(),
+      credentialType: this.credential ? this.credential.constructor.name : null,
+      cacheSize: this.tokenCache.size,
+    };
   }
 
   /**
@@ -222,20 +231,48 @@ export function isAuthenticationReady(): boolean {
 }
 
 /**
- * Set authentication state
+ * Require authentication - performs lazy authentication on first call
+ * This function will:
+ * 1. Check if already authenticated (fast path)
+ * 2. If not, initialize auth manager and get token
+ * 3. Token will come from cache if available, or prompt user if needed
+ *
+ * Per MCP specification for STDIO transport, authentication should be
+ * lazy and use environment credentials/cached tokens when available.
  */
-export function setAuthenticationState(state: boolean): void {
-  isAuthenticated = state;
-  info(`Authentication state changed: ${state ? 'authenticated' : 'not authenticated'}`);
-}
+export async function requireAuthentication(): Promise<void> {
+  // Fast path: already authenticated
+  if (isAuthenticated) {
+    return;
+  }
 
-/**
- * Require authentication - throws error if not authenticated
- */
-export function requireAuthentication(): void {
-  if (!isAuthenticated) {
+  const authManager = getAuthManager();
+
+  try {
+    // Initialize if not already done
+    if (!authManager.isConfigured()) {
+      throw new ConfigurationError(
+        'Authentication not configured. Missing AZURE_TENANT_ID or AZURE_CLIENT_ID.',
+        { configured: false }
+      );
+    }
+
+    info('First tool call - initializing authentication');
+    await authManager.initialize();
+
+    info('Obtaining access token (will use cached token if available)');
+    // This will use cached token if available, or prompt user to login
+    await authManager.getAccessToken(['https://graph.microsoft.com/.default']);
+
+    // Mark as authenticated
+    isAuthenticated = true;
+    info('Authentication successful - token obtained and cached');
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    logError('Authentication failed', error);
     throw new AuthenticationError(
-      'Authentication not ready. The server is still initializing authentication or authentication failed during startup. Please check server logs for details.'
+      `Failed to authenticate: ${errorMsg}. Please check your Azure AD configuration.`,
+      { error: errorMsg }
     );
   }
 }

@@ -7,7 +7,7 @@ import {
 import { logger, info, error as logError } from './utils/logger.js';
 import { formatErrorResponse, ValidationError } from './utils/errors.js';
 import { requireString, optionalString, optionalBoolean } from './utils/validation.js';
-import { getAuthManager, requireAuthentication, setAuthenticationState, isAuthenticationReady } from './auth/identity.js';
+import { getAuthManager, requireAuthentication, isAuthenticationReady } from './auth/identity.js';
 
 /**
  * Create and configure the MCP server
@@ -79,20 +79,6 @@ export function createServer(): Server {
         properties: {},
       },
     },
-    {
-      name: 'authTest',
-      description: 'Tests Azure AD authentication by attempting to obtain an access token. Initializes authentication if not already done.',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          scopes: {
-            type: 'array',
-            items: { type: 'string' },
-            description: 'Optional scopes to request (default: https://graph.microsoft.com/.default)',
-          },
-        },
-      },
-    },
   ];
 
   // Handle list_tools request
@@ -111,8 +97,8 @@ export function createServer(): Server {
     try {
       switch (name) {
         case 'hello': {
-          // Require authentication for this tool
-          requireAuthentication();
+          // Require authentication for this tool (lazy authentication on first call)
+          await requireAuthentication();
 
           const userName = requireString(args?.name, 'name');
 
@@ -127,8 +113,8 @@ export function createServer(): Server {
         }
 
         case 'echo': {
-          // Require authentication for this tool
-          requireAuthentication();
+          // Require authentication for this tool (lazy authentication on first call)
+          await requireAuthentication();
 
           const message = requireString(args?.message, 'message');
           const uppercase = args?.uppercase === true;
@@ -153,8 +139,8 @@ export function createServer(): Server {
         }
 
         case 'serverInfo': {
-          // Require authentication for this tool
-          requireAuthentication();
+          // Require authentication for this tool (lazy authentication on first call)
+          await requireAuthentication();
 
           const authManager = getAuthManager();
           const serverInfo = {
@@ -177,7 +163,8 @@ export function createServer(): Server {
               method: 'InteractiveBrowser',
               defaultClientId: 'f44ab954-9e38-4330-aa49-e93d73ab0ea6',
               defaultTenantId: 'common',
-              enforcementPolicy: 'All tools except authTest require authentication',
+              enforcementPolicy: 'All tools require authentication (lazy, on first call)',
+              note: 'Per MCP spec for STDIO: credentials retrieved from environment, authentication happens on first tool call',
             },
             toolCount: tools.length,
             availableTools: tools.map(t => t.name),
@@ -194,17 +181,18 @@ export function createServer(): Server {
         }
 
         case 'authConfig': {
-          // Require authentication for this tool
-          requireAuthentication();
-
+          // This tool does NOT require authentication - it's used for diagnostics
           const authManager = getAuthManager();
           const config = authManager.getConfig();
+          const authStatus = authManager.getAuthStatus();
           const authConfigInfo = {
             configured: authManager.isConfigured(),
+            authenticated: isAuthenticationReady(),
             tenantId: config.tenantId,
             clientId: config.clientId,
             authMethod: config.authMethod,
-            note: 'Client secret is not displayed for security reasons',
+            authStatus: authStatus,
+            note: 'This tool is for diagnostics. It does not require authentication.',
           };
 
           return {
@@ -215,69 +203,6 @@ export function createServer(): Server {
               },
             ],
           };
-        }
-
-        case 'authTest': {
-          // NOTE: authTest does NOT require authentication
-          // This is the tool used to authenticate
-          const authManager = getAuthManager();
-
-          // Initialize if not already done
-          if (!authManager.isConfigured()) {
-            throw new ValidationError('Authentication not configured. Please set required environment variables.');
-          }
-
-          try {
-            await authManager.initialize();
-
-            const scopes = (args?.scopes as string[]) || ['https://graph.microsoft.com/.default'];
-            const success = await authManager.testAuthentication(scopes);
-
-            // Update global authentication state based on result
-            setAuthenticationState(success);
-
-            const result = {
-              success,
-              message: success
-                ? 'Authentication successful! All tools are now available.'
-                : 'Authentication failed. Check logs for details.',
-              config: authManager.getConfig(),
-              scopes,
-              note: success
-                ? 'Authentication state has been updated. You can now use all other tools.'
-                : 'Authentication failed. Please check your configuration and try again.',
-            };
-
-            return {
-              content: [
-                {
-                  type: 'text',
-                  text: JSON.stringify(result, null, 2),
-                },
-              ],
-            };
-          } catch (error) {
-            // Authentication failed, update state
-            setAuthenticationState(false);
-
-            const result = {
-              success: false,
-              message: 'Authentication test failed',
-              error: error instanceof Error ? error.message : String(error),
-              config: authManager.getConfig(),
-              note: 'Authentication state remains unauthenticated. Other tools will not work until authentication succeeds.',
-            };
-
-            return {
-              content: [
-                {
-                  type: 'text',
-                  text: JSON.stringify(result, null, 2),
-                },
-              ],
-              isError: true,
-            };
-          }
         }
 
         default:
