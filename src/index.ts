@@ -21,8 +21,8 @@ async function initializeAuthentication(): Promise<void> {
   // Skip auto-authentication for DeviceCode to avoid blocking server startup
   // DeviceCode requires manual user interaction which would hang the server
   if (config.authMethod === 'DeviceCode') {
-    info('DeviceCode authentication method detected - skipping auto-authentication on startup');
-    info('Please use the authTest tool to authenticate interactively');
+    warn('DeviceCode authentication method requires manual interaction - cannot auto-authenticate on startup');
+    warn('This authentication method is not recommended for automatic startup. Consider using InteractiveBrowser instead.');
     setAuthenticationState(false);
     return;
   }
@@ -43,15 +43,16 @@ async function initializeAuthentication(): Promise<void> {
       info('  Token has been cached and will be automatically refreshed');
     } else {
       setAuthenticationState(false);
-      warn('✗ Authentication test failed - tools requiring authentication will not work');
-      warn('  Use authTest tool to authenticate manually');
+      logError('✗ Authentication failed during startup');
+      logError('  Server started but tools will not work until authentication succeeds');
+      logError('  Check your Azure AD configuration and credentials');
     }
   } catch (error) {
     setAuthenticationState(false);
     const errorMessage = error instanceof Error ? error.message : String(error);
-    warn(`✗ Authentication initialization failed: ${errorMessage}`);
-    warn('  Server will start but tools requiring authentication will not work');
-    warn('  Use authTest tool to authenticate manually');
+    logError(`✗ Authentication initialization failed: ${errorMessage}`);
+    logError('  Server started but tools will not work until authentication succeeds');
+    logError('  This is likely a configuration issue. Check server logs for details.');
   }
 }
 

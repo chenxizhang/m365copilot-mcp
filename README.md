@@ -100,14 +100,17 @@ Ask Claude: "Use the authConfig tool to show authentication configuration"
 
 ### authTest
 
-Tests Azure AD authentication by attempting to obtain an access token. Initializes authentication if not already done.
+**[Diagnostic Tool Only]** Manually tests or retries authentication. This tool is only needed for troubleshooting - normal operation does not require calling this tool as authentication happens automatically on server startup.
 
 **Parameters:**
 - `scopes` (array of strings, optional): Scopes to request (default: `["https://graph.microsoft.com/.default"]`)
 
+**When to use:**
+- Only use for troubleshooting authentication issues
+- Server authenticates automatically on startup - manual authentication is not needed
+
 **Example usage:**
-- Ask Claude: "Use the authTest tool to test authentication"
-- Ask Claude: "Use the authTest tool with scopes ['https://graph.microsoft.com/User.Read']"
+- Ask Claude: "Use the authTest tool to test authentication" (troubleshooting only)
 
 ## Development
 
@@ -191,20 +194,20 @@ m365copilot-mcp/
 - Token cache location: System credential manager (Windows) or keychain (macOS)
 
 ### Authentication Tools
-- **authConfig**: View current authentication settings
-- **authTest**: Test authentication and obtain access tokens
+- **authConfig**: View current authentication settings (diagnostic tool)
+- **authTest**: Manually retry authentication (diagnostic/troubleshooting tool only - not required for normal operation)
 
 ### Configuration
 
 The server comes with a default multi-tenant Azure AD app. For DeviceCode authentication, no configuration is needed!
 
-**Authentication Enforcement**:
-- ⚠️ **All tools except `authTest` require authentication**
-- Server attempts authentication automatically on startup
-- If startup authentication fails, use `authTest` tool to authenticate manually
-- Once authenticated, all other tools become available
+**Automatic Authentication**:
+- ✅ **Server authenticates automatically on startup**
+- ✅ **All tools become available immediately after successful authentication**
+- ✅ **No manual steps required** - just start the server
+- ⚠️ If startup authentication fails, check server logs for error details
 
-**Quick Start (InteractiveBrowser - No secrets needed)**:
+**Quick Start (InteractiveBrowser - Fully Automatic)**:
 1. **First time**: Server starts and automatically opens browser for login
 2. Login with your Microsoft 365 account in browser
 3. Token is cached locally - subsequent startups use cached token

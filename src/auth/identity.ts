@@ -303,7 +303,7 @@ export function setAuthenticationState(state: boolean): void {
 export function requireAuthentication(): void {
   if (!isAuthenticated) {
     throw new AuthenticationError(
-      'Authentication required. Please ensure the server is properly authenticated or call authTest tool to authenticate.'
+      'Authentication not ready. The server is still initializing authentication or authentication failed during startup. Please check server logs for details.'
     );
   }
 }
