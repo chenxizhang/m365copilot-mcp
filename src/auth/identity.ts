@@ -83,14 +83,22 @@ export class AuthenticationManager {
 
   /**
    * Save authentication record to disk
+   * Note: AuthenticationRecord contains only non-sensitive account metadata
+   * (username, tenant, authority). It does NOT contain tokens or secrets.
+   * Actual tokens are encrypted and stored in OS credential manager via
+   * @azure/identity-cache-persistence (Windows DPAPI, macOS Keychain, Linux LibSecret)
    */
   private saveAuthRecord(authRecord: AuthenticationRecord): void {
     try {
       const authRecordPath = this.getAuthRecordPath();
       const serialized = serializeAuthenticationRecord(authRecord);
-      fs.writeFileSync(authRecordPath, serialized, 'utf-8');
+
+      // Write file with restricted permissions (0600 = owner read/write only)
+      // On Windows, this sets file to be accessible only by the current user
+      fs.writeFileSync(authRecordPath, serialized, { encoding: 'utf-8', mode: 0o600 });
+
       this.authRecord = authRecord;
-      info('Saved authentication record to disk');
+      info('Saved authentication record to disk with restricted permissions');
     } catch (error) {
       logError('Failed to save authentication record', error);
     }
