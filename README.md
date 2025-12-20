@@ -103,7 +103,17 @@ Ask Claude: "Use the authConfig tool to show authentication configuration"
 **[Diagnostic Tool Only]** Manually tests or retries authentication. This tool is only needed for troubleshooting - normal operation does not require calling this tool as authentication happens automatically on server startup.
 
 **Parameters:**
-- `scopes` (array of strings, optional): Scopes to request (default: `["https://graph.microsoft.com/.default"]`)
+- `scopes` (array of strings, optional): Scopes to request (default: required M365 Copilot scopes)
+
+**Default Scopes Requested:**
+- `Sites.Read.All` - Access SharePoint sites
+- `Mail.Read` - Read user mail
+- `People.Read.All` - Read organizational contacts
+- `OnlineMeetingTranscript.Read.All` - Read meeting transcripts
+- `Chat.Read` - Read Teams chats
+- `ChannelMessage.Read.All` - Read Teams channel messages
+- `ExternalItem.Read.All` - Read external items
+- `Files.Read.All` - Read all files
 
 **When to use:**
 - Only use for troubleshooting authentication issues
@@ -145,8 +155,6 @@ m365copilot-mcp/
 │   └── auth/                 # Authentication modules (Stage 3+)
 │       └── identity.ts       # Azure Identity integration
 ├── build/                    # Compiled JavaScript (generated)
-├── .github/
-│   └── copilot-instructions.md  # GitHub Copilot instructions
 ├── .env.example              # Example environment configuration
 ├── package.json              # Dependencies and scripts
 ├── tsconfig.json             # TypeScript configuration
@@ -186,6 +194,19 @@ m365copilot-mcp/
 - Default tenant: 'common' for multi-tenant support
 - Environment variable override for custom configurations
 - No secrets or manual configuration required
+
+### Required Permissions
+The server requests the following Microsoft Graph API permissions during authentication:
+- **Sites.Read.All** - Access SharePoint sites and content
+- **Mail.Read** - Read user mailbox messages
+- **People.Read.All** - Read organizational directory and contacts
+- **OnlineMeetingTranscript.Read.All** - Read Teams meeting transcripts
+- **Chat.Read** - Read Teams chat messages
+- **ChannelMessage.Read.All** - Read Teams channel messages
+- **ExternalItem.Read.All** - Read external search items
+- **Files.Read.All** - Read files across SharePoint and OneDrive
+
+These permissions are required for full M365 Copilot integration in later stages.
 
 ### Token Management
 - **Persistent token caching** - tokens are cached locally and survive server restarts

@@ -312,6 +312,21 @@ let authManager: AuthenticationManager | null = null;
 let isAuthenticated = false;
 
 /**
+ * Required Microsoft Graph API scopes for M365 Copilot MCP Server
+ * These scopes provide access to user data needed for M365 Copilot integration
+ */
+export const REQUIRED_SCOPES = [
+  'https://graph.microsoft.com/Sites.Read.All',
+  'https://graph.microsoft.com/Mail.Read',
+  'https://graph.microsoft.com/People.Read.All',
+  'https://graph.microsoft.com/OnlineMeetingTranscript.Read.All',
+  'https://graph.microsoft.com/Chat.Read',
+  'https://graph.microsoft.com/ChannelMessage.Read.All',
+  'https://graph.microsoft.com/ExternalItem.Read.All',
+  'https://graph.microsoft.com/Files.Read.All',
+];
+
+/**
  * Get or create the singleton authentication manager instance
  */
 export function getAuthManager(config?: AzureConfig): AuthenticationManager {
@@ -367,15 +382,15 @@ export async function requireAuthentication(): Promise<void> {
     info('First tool call - initializing authentication');
     await authManager.initialize();
 
-    info('Obtaining access token (will use cached token if available)');
+    info('Obtaining access token with required Microsoft Graph API scopes (will use cached token if available)', { scopeCount: REQUIRED_SCOPES.length });
     // This will use cached token if available, or prompt user to login
-    await authManager.getAccessToken(['https://graph.microsoft.com/.default']);
+    await authManager.getAccessToken(REQUIRED_SCOPES);
 
     // If this is the first time (no auth record), call authenticate to get the record
     // This ensures we can do silent authentication on next restart
     if (!authManager.hasAuthRecord()) {
       info('First-time authentication - obtaining authentication record for future silent auth');
-      await authManager.ensureAuthRecord(['https://graph.microsoft.com/.default']);
+      await authManager.ensureAuthRecord(REQUIRED_SCOPES);
     }
 
     // Mark as authenticated

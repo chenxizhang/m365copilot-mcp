@@ -95,12 +95,21 @@ Completed features:
 
 ### Stage 3: Azure Identity Integration (COMPLETED)
 Completed features:
-- Implemented Azure AD authentication with multiple methods (ClientSecret, DeviceCode, ManagedIdentity)
+- Implemented Azure AD authentication with InteractiveBrowser method
 - Added token management with caching and auto-refresh
 - Created default multi-tenant app configuration with override capability
 - Added authentication tools (authConfig, authTest)
 - **Authentication Enforcement**: All tools except authTest require authentication
 - Auto-authentication on server startup with fallback to manual authentication
+- **Required Microsoft Graph API Permissions**:
+  - Sites.Read.All - Access SharePoint sites
+  - Mail.Read - Read user mail
+  - People.Read.All - Read organizational contacts
+  - OnlineMeetingTranscript.Read.All - Read meeting transcripts
+  - Chat.Read - Read Teams chats
+  - ChannelMessage.Read.All - Read Teams channel messages
+  - ExternalItem.Read.All - Read external items
+  - Files.Read.All - Read all files
 
 ### Stage 4: Microsoft Graph API Test
 Will focus on:
@@ -247,14 +256,9 @@ When multiple agents work on this project:
 - Detailed instructions for Claude Code agents
 - Internal project structure and decisions
 
-### copilot-instructions.md
-- Adapted version for GitHub Copilot
-- Same core information, different format
-- Keep synchronized with CLAUDE.md
-
 ### README.md
 - User-facing documentation
 - Setup and usage instructions
 - Feature list and examples
 
-All three files should be updated together when making significant changes.
+Both files should be updated together when making significant changes.

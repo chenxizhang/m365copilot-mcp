@@ -7,7 +7,7 @@ import {
 import { logger, info, error as logError } from './utils/logger.js';
 import { formatErrorResponse, ValidationError } from './utils/errors.js';
 import { requireString, optionalString, optionalBoolean } from './utils/validation.js';
-import { getAuthManager, requireAuthentication, isAuthenticationReady } from './auth/identity.js';
+import { getAuthManager, requireAuthentication, isAuthenticationReady, REQUIRED_SCOPES } from './auth/identity.js';
 
 /**
  * Create and configure the MCP server
@@ -102,11 +102,31 @@ export function createServer(): Server {
 
           const userName = requireString(args?.name, 'name');
 
+          // Get access token to verify authentication is working
+          const authManager = getAuthManager();
+          const accessToken = await authManager.getAccessToken(REQUIRED_SCOPES);
+
+          // For security, only show partial token (first 20 and last 20 characters)
+          const tokenPreview = accessToken.length > 40
+            ? `${accessToken.substring(0, 20)}...${accessToken.substring(accessToken.length - 20)}`
+            : 'token too short';
+
+          const response = {
+            greeting: `Hello, ${userName}! Welcome to M365 Copilot MCP Server.`,
+            status: 'Connection is working successfully!',
+            authentication: {
+              authenticated: true,
+              tokenLength: accessToken.length,
+              tokenPreview: tokenPreview,
+              scopesRequested: REQUIRED_SCOPES.length,
+            }
+          };
+
           return {
             content: [
               {
                 type: 'text',
-                text: `Hello, ${userName}! Welcome to M365 Copilot MCP Server. The connection is working successfully!`,
+                text: JSON.stringify(response, null, 2),
               },
             ],
           };
