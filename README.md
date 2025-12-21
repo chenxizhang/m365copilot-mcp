@@ -4,188 +4,238 @@
 [![npm version](https://badge.fury.io/js/m365-copilot-mcp.svg)](https://www.npmjs.com/package/m365-copilot-mcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Connect Claude AI to your Microsoft 365 content through the Model Context Protocol (MCP). Access your SharePoint, OneDrive, emails, Teams chats, and more directly from Claude.
+> **Note:** This is an unofficial MCP server developed by Microsoft engineers, integrating the latest Microsoft 365 Copilot APIs. We welcome your feedback and contributions!
 
-## What is this?
+Connect your AI assistant to Microsoft 365 through the Model Context Protocol (MCP). This server enables AI tools to access your SharePoint documents, OneDrive files, emails, Teams conversations, and more - all while respecting your organization's access controls.
 
-This MCP server gives Claude AI three powerful capabilities:
+## Overview
 
-1. **📄 Retrieval** - Extract relevant text from your M365 content to answer questions
-2. **🔍 Search** - Find specific documents and files across your M365 environment
-3. **💬 Chat** - Have conversations with Microsoft 365 Copilot about your content and schedule
+The `m365-copilot-mcp` server provides three powerful capabilities for AI assistants:
+
+| Capability | Purpose | Use Cases |
+|------------|---------|-----------|
+| **📄 Retrieval** | Extract relevant text content from your M365 data | Answer questions using information from your documents, emails, and conversations |
+| **🔍 Search** | Find specific documents and files | Locate files, discover relevant content across your M365 environment |
+| **💬 Chat** | Conversational AI powered by M365 Copilot | Ask about your schedule, get summaries, interact with time-aware queries |
 
 ## Prerequisites
 
-- Node.js 20 or higher
-- Claude Code CLI ([Installation guide](https://claude.com/claude-code))
-- Microsoft 365 account with appropriate licenses
+- **Node.js 20+** - Runtime environment
+- **Microsoft 365 account** - With appropriate licenses
+- **MCP-compatible AI tool** - Such as Claude Code, GitHub Copilot, or any other MCP client
 
 ## Installation
 
-### Option 1: Install from npm (Recommended)
-
-Once published to npm, you can install globally:
+Install the MCP server globally via npm:
 
 ```bash
 npm install -g m365-copilot-mcp
 ```
 
-Then add to Claude Code:
+## Configuration
+
+The MCP server needs to be configured in your AI tool's settings. Below are configuration examples for popular AI assistants.
+
+### Claude Code
+
+Add the server to your Claude Code configuration:
 
 ```bash
 claude mcp add m365-copilot-mcp
 ```
 
-### Option 2: Install from source
+Or manually edit your Claude Code configuration file (`~/.config/claude-code/config.json`):
+
+```json
+{
+  "mcpServers": {
+    "m365-copilot": {
+      "command": "m365-copilot-mcp"
+    }
+  }
+}
+```
+
+### GitHub Copilot
+
+Configure in your GitHub Copilot settings file (location varies by platform):
+
+**macOS/Linux:** `~/.config/github-copilot/config.json`
+**Windows:** `%APPDATA%\GitHub Copilot\config.json`
+
+```json
+{
+  "mcp": {
+    "servers": {
+      "m365-copilot": {
+        "command": "m365-copilot-mcp"
+      }
+    }
+  }
+}
+```
+
+### Other MCP Clients
+
+For other MCP-compatible tools, add the server using the command:
 
 ```bash
-# Clone the repository
-git clone https://github.com/chenxizhang/m365copilot-mcp.git
-cd m365copilot-mcp
-
-# Install dependencies
-npm install
-
-# Build the project
-npm run build
-
-# Add to Claude Code
-claude mcp add --transport stdio m365-copilot -- node C:\work\m365copilot-mcp\build\index.js
+m365-copilot-mcp
 ```
+
+Refer to your specific AI tool's documentation for MCP server configuration instructions.
 
 ## Authentication
 
-On first run, the server will automatically open your browser for Microsoft 365 authentication. After signing in once, your credentials are securely cached - no need to sign in again.
+On first use, the server will automatically open your browser for Microsoft 365 authentication. After signing in once, your credentials are securely cached locally - no need to sign in again.
 
-**Required Permissions:** The server will request access to read your SharePoint sites, OneDrive files, emails, Teams chats, and meeting transcripts.
+### Security & Privacy
 
-## How to Use
+**Your data is safe.** The MCP server:
+- ✅ Only reads data through official Microsoft Graph APIs
+- ✅ Respects your organization's access controls and permissions
+- ✅ Stores authentication tokens locally on your machine (encrypted)
+- ✅ Does NOT store, collect, or transmit any of your M365 content
+- ✅ Makes direct API calls to Microsoft - no third-party servers involved
 
-Once installed, you can ask Claude to interact with your M365 content. The server provides three tools:
+### Using Your Own Azure AD App (Optional)
 
-### 1. m365copilotretrieval - Answer Questions with Your Content
+If you have security concerns or organizational requirements, you can use your own Azure AD application instead of the built-in one. However, **this is completely optional** - the default configuration is secure and sufficient for most users.
 
-**Use this when:** You need Claude to answer questions using information from your M365 content.
-
-**Example prompts:**
-- "Search my documents for information about the Q4 project deadlines"
-- "What did the team decide about the feature launch?"
-- "Find information about budget approval in my content"
-
-**What it does:** Retrieves relevant text excerpts from SharePoint and OneDrive to ground Claude's answers in your actual content.
-
----
-
-### 2. m365copilotsearch - Find Documents
-
-**Use this when:** You need to find or locate specific files and documents.
-
-**Example prompts:**
-- "Find the VPN setup guide in my M365"
-- "Search for the quarterly budget spreadsheet"
-- "Locate documents about network configuration"
-
-**What it does:** Returns links to documents with preview text so you can open or share them.
-
----
-
-### 3. m365copilotchat - Chat with Copilot
-
-**Use this when:** You want conversational interactions, especially for time-aware queries about calendar and tasks.
-
-**Example prompts:**
-- "Ask Copilot what meetings I have tomorrow" (timezone: America/New_York)
-- "Chat with Copilot about my schedule this week" (timezone: Europe/London)
-- "Ask Copilot to summarize recent team discussions" (timezone: Asia/Shanghai)
-
-**Important:** Requires your timezone in IANA format (e.g., "America/New_York", "Europe/London", "Asia/Shanghai").
-
-**What it does:** Enables multi-turn conversations with M365 Copilot, maintaining context across multiple questions.
-
-## Tool Selection Guide
-
-Not sure which tool to use? Here's a quick guide:
-
-| What you want to do | Use this tool | Example |
-|---------------------|---------------|---------|
-| Answer a question with your content | `m365copilotretrieval` | "What's the project deadline?" |
-| Find a specific document | `m365copilotsearch` | "Find the budget spreadsheet" |
-| Ask about your schedule | `m365copilotchat` | "What meetings do I have tomorrow?" |
-| Have a conversation with Copilot | `m365copilotchat` | "Summarize team discussions this week" |
-
-## Configuration (Optional)
-
-By default, the server uses a built-in multi-tenant Azure AD app. No configuration needed!
-
-To use your own Azure AD app, create a `.env` file:
+To use a custom Azure AD app, create a `.env` file in your home directory:
 
 ```bash
 AZURE_CLIENT_ID=your-client-id
 AZURE_TENANT_ID=your-tenant-id
 ```
 
+**Required Microsoft Graph API Permissions:**
+- Sites.Read.All
+- Files.Read.All
+- Mail.Read
+- Chat.Read
+- ChannelMessage.Read.All
+- OnlineMeetingTranscript.Read.All
+- People.Read.All
+- ExternalItem.Read.All
+
+## Available Tools
+
+Your AI assistant can now use these three tools to interact with your M365 content:
+
+### 1. m365copilotretrieval
+
+Retrieves relevant text excerpts from your SharePoint and OneDrive content to answer questions.
+
+**Best for:**
+- Answering questions based on your documents
+- Finding information buried in your content
+- Grounding AI responses in your actual data
+
+**Example prompts:**
+- "What are the Q4 project deadlines mentioned in my documents?"
+- "Summarize the team's decision about the new feature"
+- "What does our company policy say about remote work?"
+
+### 2. m365copilotsearch
+
+Searches across your M365 environment to find specific documents and files.
+
+**Best for:**
+- Locating specific documents
+- Getting document links to open or share
+- Discovering relevant files across SharePoint and OneDrive
+
+**Example prompts:**
+- "Find the VPN setup guide"
+- "Search for the Q4 budget spreadsheet"
+- "Locate documents about network security policies"
+
+### 3. m365copilotchat
+
+Enables conversational interactions with Microsoft 365 Copilot, with awareness of your calendar, tasks, and content.
+
+**Best for:**
+- Asking about your schedule and meetings
+- Getting summaries of recent activities
+- Time-aware queries that need context
+
+**Example prompts:**
+- "What meetings do I have tomorrow?"
+- "Summarize recent discussions about the product launch"
+- "What are my action items for this week?"
+
+**Note:** This tool requires your timezone in IANA format (e.g., "America/New_York", "Europe/London", "Asia/Shanghai").
+
+## How It Works
+
+```
+┌─────────────────┐
+│   AI Assistant  │
+│ (Claude, etc.)  │
+└────────┬────────┘
+         │
+         │ MCP Protocol
+         ▼
+┌─────────────────┐
+│ m365-copilot-mcp│
+│     Server      │
+└────────┬────────┘
+         │
+         │ Microsoft Graph API
+         ▼
+┌─────────────────┐
+│  Microsoft 365  │
+│   (Your Data)   │
+└─────────────────┘
+```
+
+The MCP server acts as a secure bridge between your AI assistant and Microsoft 365, using official Microsoft APIs to access your data based on your permissions.
+
 ## Troubleshooting
 
-### Authentication issues
-- Clear cached tokens: Delete the token cache file in your home directory
-- Ensure you have an active Microsoft 365 subscription
-- Check that your account has the required permissions
+### Authentication Issues
 
-### Connection issues
-- Verify the server is running: `claude mcp list`
-- Restart Claude Code CLI
-- Reinstall the MCP server
+**Problem:** Browser doesn't open for login
+**Solution:** Manually authenticate by setting `AZURE_CLIENT_ID` in your environment
 
-### Tool not working
-- Check your timezone format for the chat tool (must be IANA format)
-- Ensure you're signed in to Microsoft 365
-- Check Claude's error messages for specific issues
+**Problem:** "Permission denied" errors
+**Solution:** Ensure your Microsoft 365 account has access to the requested resources
 
-## Privacy & Security
+### Connection Issues
 
-- **Authentication:** Uses Microsoft's official Azure Identity library with secure token storage
-- **Permissions:** Read-only access to your M365 content
-- **Data:** No data is stored by this server - all requests go directly to Microsoft APIs
-- **Tokens:** Cached locally on your machine, encrypted at rest
+**Problem:** AI assistant can't find the MCP server
+**Solution:**
+- Verify installation: `npm list -g m365-copilot-mcp`
+- Check that Node.js 20+ is installed: `node --version`
+- Restart your AI assistant
 
-## Support
+### Tool Not Working
 
-- **Issues:** [GitHub Issues](https://github.com/chenxizhang/m365copilot-mcp/issues)
-- **Documentation:** [Full documentation](https://github.com/chenxizhang/m365copilot-mcp)
+**Problem:** Chat tool fails with timezone error
+**Solution:** Ensure you provide timezone in IANA format (e.g., "America/New_York")
+
+**Problem:** No results returned
+**Solution:** Verify you have access to M365 content and are signed in to the correct account
+
+## Supported Platforms
+
+- ✅ Windows 10/11
+- ✅ macOS 10.15+
+- ✅ Linux (Ubuntu 20.04+, other distributions)
+
+## Feedback & Support
+
+This project is actively maintained. We welcome your feedback and contributions!
+
+- **Report Issues:** [GitHub Issues](https://github.com/chenxizhang/m365copilot-mcp/issues)
+- **Feature Requests:** [GitHub Discussions](https://github.com/chenxizhang/m365copilot-mcp/discussions)
+- **Documentation:** [GitHub Repository](https://github.com/chenxizhang/m365copilot-mcp)
 
 ## License
 
 MIT License - see [LICENSE](LICENSE) file for details.
 
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## For Developers
-
-### Setting up npm Publication
-
-This project uses GitHub Actions for automated npm publishing. To enable automatic publishing:
-
-1. **Create an npm access token:**
-   - Log in to [npmjs.com](https://www.npmjs.com/)
-   - Go to Account Settings → Access Tokens
-   - Generate a new "Automation" token
-
-2. **Add the token to GitHub Secrets:**
-   - Go to your repository Settings → Secrets and variables → Actions
-   - Create a new secret named `NPM_TOKEN`
-   - Paste your npm access token
-
-3. **Publishing:**
-   - **Automatic:** Create a new GitHub Release, and the package will be published automatically
-   - **Manual:** Go to Actions → Publish to npm → Run workflow
-
-### CI/CD Workflows
-
-- **CI Workflow:** Runs on every push and pull request to build and verify the project
-- **Publish Workflow:** Automatically publishes to npm when a GitHub release is created
-
 ---
 
-Made with ❤️ for Claude AI and Microsoft 365 users
+**Developed by Microsoft engineers** | **Powered by Microsoft 365 Copilot APIs**
