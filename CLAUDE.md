@@ -152,7 +152,7 @@ Completed features:
 - **Two-step chat flow**: Creates conversation, then sends chat messages
 - **Session-based conversation management**: Automatically caches and reuses conversation ID within session
 - Supports optional conversation ID parameter for explicit conversation control
-- User timezone support for time-aware queries (defaults to UTC)
+- User timezone support for time-aware queries (required IANA format)
 - Returns full conversation history with messages, attributions, and adaptive cards
 - Reuses httpClient utility and follows established patterns
 
@@ -163,7 +163,7 @@ Completed features:
   - POST `/beta/copilot/conversations` - Create new conversation
   - POST `/beta/copilot/conversations/{id}/chat` - Send chat message
 - Smart conversation management: Creates new conversation only when needed, otherwise reuses cached ID
-- User-configurable: message (required), conversationId (optional), timeZone (optional)
+- User-configurable: message (required), conversationId (optional), timeZone (required)
 - Simplicity: Automatic conversation lifecycle management, no manual conversation tracking required
 - Helper functions: `clearConversationCache()` and `getCachedConversationId()` for advanced use cases
 

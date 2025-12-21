@@ -132,7 +132,7 @@ The Microsoft 365 Copilot Chat tool enables conversational AI interactions with 
 **Parameters:**
 - `message` (string, required): The message or question to send to Copilot
 - `conversationId` (string, optional): Conversation ID to continue an existing conversation. If not provided, automatically creates and reuses a conversation within the session.
-- `timeZone` (string, optional): User timezone in IANA format (e.g., "America/New_York", "Asia/Shanghai", "Europe/London"). Defaults to "UTC" if not provided.
+- `timeZone` (string, required): User timezone in IANA format (e.g., "America/New_York", "Asia/Shanghai", "Europe/London"). Must be a valid IANA timezone identifier.
 
 **Example usage:**
 - Ask Claude: "Use m365copilotchat to ask what meetings I have tomorrow at 9 AM"
