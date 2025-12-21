@@ -25,7 +25,7 @@ Development follows a staged approach:
 3. **Stage 3**: Azure Identity Integration (COMPLETED)
 4. **Stage 4**: M365 Copilot Retrieval API (COMPLETED)
 5. **Stage 5**: M365 Copilot Search API (COMPLETED)
-6. **Stage 6**: M365 Copilot Chat API
+6. **Stage 6**: M365 Copilot Chat API (COMPLETED)
 7. **Stage 7**: Production Polish
 
 ## Project Structure
@@ -42,7 +42,8 @@ m365copilot-mcp/
 │   │   └── httpClient.ts     # Graph REST API client (Stage 4+)
 │   ├── tools/                # Tool implementations (Stage 4+)
 │   │   ├── retrieval.ts      # M365 Copilot Retrieval API
-│   │   └── search.ts         # M365 Copilot Search API
+│   │   ├── search.ts         # M365 Copilot Search API
+│   │   └── chat.ts           # M365 Copilot Chat API
 │   └── auth/                 # Authentication modules (Stage 3+)
 │       └── identity.ts       # Azure Identity integration
 ├── build/                    # Compiled JavaScript (generated)
@@ -144,11 +145,27 @@ Completed features:
 - Simplicity: Microsoft Graph API handles multi-source search automatically
 - Returns raw API response with document metadata for agent use
 
-### Stage 6: M365 Copilot Chat API
-Will implement:
-- Copilot Chat API integration
-- Conversational AI capabilities
-- Follow same pattern as Retrieval and Search
+### Stage 6: M365 Copilot Chat API (COMPLETED)
+Completed features:
+- Implemented Copilot Chat API tool (`src/tools/chat.ts`)
+- Added `m365copilotchat` MCP tool - conversational AI with M365 context
+- **Two-step chat flow**: Creates conversation, then sends chat messages
+- **Session-based conversation management**: Automatically caches and reuses conversation ID within session
+- Supports optional conversation ID parameter for explicit conversation control
+- User timezone support for time-aware queries (defaults to UTC)
+- Returns full conversation history with messages, attributions, and adaptive cards
+- Reuses httpClient utility and follows established patterns
+
+**Implementation Approach:**
+- Direct REST API calls via fetch() using existing httpClient utility
+- Module-level conversation ID caching for session persistence
+- Two API endpoints:
+  - POST `/beta/copilot/conversations` - Create new conversation
+  - POST `/beta/copilot/conversations/{id}/chat` - Send chat message
+- Smart conversation management: Creates new conversation only when needed, otherwise reuses cached ID
+- User-configurable: message (required), conversationId (optional), timeZone (optional)
+- Simplicity: Automatic conversation lifecycle management, no manual conversation tracking required
+- Helper functions: `clearConversationCache()` and `getCachedConversationId()` for advanced use cases
 
 ### Stage 7: Production Polish
 Final stage will:

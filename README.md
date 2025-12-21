@@ -2,9 +2,9 @@
 
 An MCP (Model Context Protocol) server that integrates with Microsoft 365 Copilot APIs, providing access to Retrieval, Search, and Chat capabilities.
 
-## Current Status: Stage 5 - M365 Copilot Search API
+## Current Status: Stage 6 - M365 Copilot Chat API
 
-This stage adds the Search API tool, enabling document discovery across SharePoint, OneDrive, and other M365 content sources alongside the existing Retrieval API for RAG-based content extraction.
+This stage adds the Chat API tool, enabling conversational AI interactions with M365 Copilot. Includes automatic conversation management and time-aware responses.
 
 ## Prerequisites
 
@@ -118,6 +118,48 @@ Returns JSON with:
 - **Search** (this tool): Returns document links/previews - ideal for finding documents
 - **Retrieval** (see above): Returns text content extracts - ideal for answering questions with context
 
+### m365copilotchat
+
+The Microsoft 365 Copilot Chat tool enables conversational AI interactions with your M365 data. It maintains conversation context within a session, allowing multi-turn dialogues with Copilot about your Microsoft 365 content, schedule, and tasks.
+
+**What it does:**
+- Enables interactive conversations with M365 Copilot
+- **Automatic conversation management**: Maintains conversation context within session
+- **Time-aware responses**: Uses user's timezone for accurate time-based queries
+- Returns full conversation history including messages, attributions, and adaptive cards
+- Respects user's access permissions automatically
+
+**Parameters:**
+- `message` (string, required): The message or question to send to Copilot
+- `conversationId` (string, optional): Conversation ID to continue an existing conversation. If not provided, automatically creates and reuses a conversation within the session.
+- `timeZone` (string, optional): User timezone in IANA format (e.g., "America/New_York", "Asia/Shanghai", "Europe/London"). Defaults to "UTC" if not provided.
+
+**Example usage:**
+- Ask Claude: "Use m365copilotchat to ask what meetings I have tomorrow at 9 AM"
+- Ask Claude: "Chat with Copilot about my upcoming deadlines this week"
+- Ask Claude: "Ask Copilot to summarize recent team discussions"
+- With timezone: Ask Claude: "Use m365copilotchat with timezone 'America/Los_Angeles' to check my schedule"
+
+**Response format:**
+Returns JSON with:
+- `id`: Conversation ID (can be used for future messages)
+- `createdDateTime`: When the conversation was created
+- `displayName`: Conversation title (auto-generated from first message)
+- `state`: Conversation state (e.g., "active")
+- `turnCount`: Number of turns in the conversation
+- `messages`: Array of conversation messages containing:
+  - `id`: Message ID
+  - `text`: Message content
+  - `createdDateTime`: Message timestamp
+  - `adaptiveCards`: Rich UI cards (if any)
+  - `attributions`: Source references and citations
+
+**How it works:**
+- **First call**: Creates a new conversation and caches the ID for the session
+- **Subsequent calls**: Automatically reuses the cached conversation ID
+- **Session persistence**: Maintains conversation context across multiple tool calls within the same Claude Code session
+- **Manual control**: Optionally provide your own conversation ID to continue a specific conversation
+
 ## Development
 
 ### Build and Watch Mode
@@ -151,7 +193,8 @@ m365copilot-mcp/
 │   │   └── httpClient.ts     # Graph REST API client
 │   ├── tools/                # Tool implementations
 │   │   ├── retrieval.ts      # Copilot Retrieval API
-│   │   └── search.ts         # Copilot Search API
+│   │   ├── search.ts         # Copilot Search API
+│   │   └── chat.ts           # Copilot Chat API
 │   └── auth/                 # Authentication modules
 │       └── identity.ts       # Azure Identity integration
 ├── build/                    # Compiled JavaScript (generated)
@@ -164,6 +207,13 @@ m365copilot-mcp/
 ```
 
 ## Key Features
+
+### Stage 6: M365 Copilot Chat API
+- **Copilot Chat API**: Conversational AI with M365 context
+- **Automatic conversation management**: Session-based conversation ID caching
+- **Time-aware responses**: Timezone support for accurate time-based queries
+- **Multi-turn dialogues**: Maintains conversation context across multiple messages
+- **Rich responses**: Returns messages with attributions, citations, and adaptive cards
 
 ### Stage 5: M365 Copilot Search API
 - **Copilot Search API**: Document search across all M365 content sources
@@ -221,8 +271,7 @@ LOG_LEVEL=DEBUG  # Optional, defaults to INFO
 
 ## Next Stages
 
-- **Stage 6**: M365 Copilot Chat API
-- **Stage 7**: Production Polish
+- **Stage 7**: Production Polish (comprehensive testing, performance optimization, deployment guides)
 
 ## Troubleshooting
 

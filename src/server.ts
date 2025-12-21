@@ -10,6 +10,7 @@ import { requireString, optionalString } from './utils/validation.js';
 import { requireAuthentication } from './auth/identity.js';
 import { copilotRetrieval } from './tools/retrieval.js';
 import { copilotSearch } from './tools/search.js';
+import { copilotChat } from './tools/chat.js';
 
 /**
  * Create and configure the MCP server
@@ -18,7 +19,7 @@ export function createServer(): Server {
   const server = new Server(
     {
       name: 'm365-copilot-mcp',
-      version: '0.5.0',
+      version: '0.6.0',
     },
     {
       capabilities: {
@@ -55,6 +56,28 @@ export function createServer(): Server {
           },
         },
         required: ['query'],
+      },
+    },
+    {
+      name: 'm365copilotchat',
+      description: 'The Microsoft 365 Copilot Chat tool enables conversational AI interactions with your M365 data. It maintains conversation context within a session, allowing multi-turn dialogues. Use this when you need to have interactive conversations with Copilot about your Microsoft 365 content, schedule, or tasks.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          message: {
+            type: 'string',
+            description: 'The message or question to send to Copilot',
+          },
+          conversationId: {
+            type: 'string',
+            description: 'Optional conversation ID to continue an existing conversation. If not provided, a conversation will be created automatically and reused within the session.',
+          },
+          timeZone: {
+            type: 'string',
+            description: 'User timezone in IANA format (e.g., "America/New_York", "Asia/Shanghai", "Europe/London"). Defaults to "UTC" if not provided.',
+          },
+        },
+        required: ['message'],
       },
     },
   ];
@@ -104,6 +127,29 @@ export function createServer(): Server {
 
           // Call the Copilot Search API
           const result = await copilotSearch(query);
+
+          // Return the raw JSON response
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(result, null, 2),
+              },
+            ],
+          };
+        }
+
+        case 'm365copilotchat': {
+          // Require authentication for this tool
+          await requireAuthentication();
+
+          // Validate and extract parameters
+          const message = requireString(args?.message, 'message');
+          const conversationId = optionalString(args?.conversationId, 'conversationId');
+          const timeZone = optionalString(args?.timeZone, 'timeZone') || 'UTC';
+
+          // Call the Copilot Chat API
+          const result = await copilotChat(message, conversationId, timeZone);
 
           // Return the raw JSON response
           return {
