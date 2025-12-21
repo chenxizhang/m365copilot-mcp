@@ -4,7 +4,7 @@
 [![npm version](https://badge.fury.io/js/m365-copilot-mcp.svg)](https://www.npmjs.com/package/m365-copilot-mcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-> **Note:** This is an unofficial MCP server developed by Microsoft engineers, integrating the latest Microsoft 365 Copilot APIs. We welcome your feedback and contributions!
+> **Note:** This is an unofficial MCP server, but developed by Microsoft engineers, integrating the latest Microsoft 365 Copilot APIs. We welcome your feedback and contributions!
 
 Connect your AI assistant to Microsoft 365 through the Model Context Protocol (MCP). This server enables AI tools to access your SharePoint documents, OneDrive files, emails, Teams conversations, and more - all while respecting your organization's access controls.
 
@@ -21,66 +21,65 @@ The `m365-copilot-mcp` server provides three powerful capabilities for AI assist
 ## Prerequisites
 
 - **Node.js 20+** - Runtime environment
-- **Microsoft 365 account** - With appropriate licenses
+- **Microsoft 365 account** - With Microsoft 365 Copilot license
 - **MCP-compatible AI tool** - Such as Claude Code, GitHub Copilot, or any other MCP client
-
-## Installation
-
-Install the MCP server globally via npm:
-
-```bash
-npm install -g m365-copilot-mcp
-```
 
 ## Configuration
 
-The MCP server needs to be configured in your AI tool's settings. Below are configuration examples for popular AI assistants.
+Configure the MCP server in your AI tool's settings. The server uses `npx` to run directly from npm without requiring global installation.
 
 ### Claude Code
 
-Add the server to your Claude Code configuration:
+Add the server using the Claude Code CLI:
 
+**macOS/Linux:**
 ```bash
-claude mcp add m365-copilot-mcp
+claude mcp add --transport stdio m365-copilot -- npx -y m365-copilot-mcp
 ```
 
-Or manually edit your Claude Code configuration file (`~/.config/claude-code/config.json`):
+**Windows:**
+```bash
+claude mcp add --transport stdio m365-copilot -- cmd /c npx -y m365-copilot-mcp
+```
 
+The `-y` flag automatically accepts prompts, and `npx` will download and run the latest version of the package.
+
+### GitHub Copilot (VS Code)
+
+Create a `.vscode/mcp.json` file in your project root, or add to your VS Code user settings:
+
+**Option 1: Project-level configuration** (`.vscode/mcp.json`):
 ```json
 {
-  "mcpServers": {
+  "servers": {
     "m365-copilot": {
-      "command": "m365-copilot-mcp"
+      "command": "npx",
+      "args": ["-y", "m365-copilot-mcp"]
     }
   }
 }
 ```
 
-### GitHub Copilot
-
-Configure in your GitHub Copilot settings file (location varies by platform):
-
-**macOS/Linux:** `~/.config/github-copilot/config.json`
-**Windows:** `%APPDATA%\GitHub Copilot\config.json`
-
+**Option 2: User-level configuration** (VS Code `settings.json`):
 ```json
 {
-  "mcp": {
-    "servers": {
-      "m365-copilot": {
-        "command": "m365-copilot-mcp"
-      }
+  "mcp.servers": {
+    "m365-copilot": {
+      "command": "npx",
+      "args": ["-y", "m365-copilot-mcp"]
     }
   }
 }
 ```
+
+**Requirements:** VS Code 1.99+ with GitHub Copilot extension installed.
 
 ### Other MCP Clients
 
-For other MCP-compatible tools, add the server using the command:
+For other MCP-compatible tools, use the following command with `npx`:
 
 ```bash
-m365-copilot-mcp
+npx -y m365-copilot-mcp
 ```
 
 Refer to your specific AI tool's documentation for MCP server configuration instructions.
