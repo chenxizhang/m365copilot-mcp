@@ -101,11 +101,40 @@ On first use, the server will automatically open your browser for Microsoft 365 
 
 If you have security concerns or organizational requirements, you can use your own Azure AD application instead of the built-in one. However, **this is completely optional** - the default configuration is secure and sufficient for most users.
 
-To use a custom Azure AD app, create a `.env` file in your home directory:
+To use a custom Azure AD app, provide environment variables during configuration:
 
+#### Claude Code
+
+**macOS/Linux:**
 ```bash
-AZURE_CLIENT_ID=your-client-id
-AZURE_TENANT_ID=your-tenant-id
+claude mcp add --transport stdio m365-copilot \
+  --env AZURE_CLIENT_ID=your-client-id \
+  --env AZURE_TENANT_ID=your-tenant-id \
+  -- npx -y m365-copilot-mcp
+```
+
+**Windows:**
+```bash
+claude mcp add --transport stdio m365-copilot --env AZURE_CLIENT_ID=your-client-id --env AZURE_TENANT_ID=your-tenant-id -- cmd /c npx -y m365-copilot-mcp
+```
+
+#### GitHub Copilot (VS Code)
+
+Add environment variables to your configuration:
+
+```json
+{
+  "servers": {
+    "m365-copilot": {
+      "command": "npx",
+      "args": ["-y", "m365-copilot-mcp"],
+      "env": {
+        "AZURE_CLIENT_ID": "your-client-id",
+        "AZURE_TENANT_ID": "your-tenant-id"
+      }
+    }
+  }
+}
 ```
 
 **Required Microsoft Graph API Permissions:**
