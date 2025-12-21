@@ -1,6 +1,6 @@
 {
   "name": "m365-copilot-mcp",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "MCP server for Microsoft 365 Copilot APIs integration",
   "main": "build/index.js",
   "type": "module",

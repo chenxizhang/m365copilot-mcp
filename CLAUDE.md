@@ -24,7 +24,7 @@ Development follows a staged approach:
 2. **Stage 2**: Enhanced Tools & Error Handling (COMPLETED)
 3. **Stage 3**: Azure Identity Integration (COMPLETED)
 4. **Stage 4**: M365 Copilot Retrieval API (COMPLETED)
-5. **Stage 5**: M365 Copilot Search API
+5. **Stage 5**: M365 Copilot Search API (COMPLETED)
 6. **Stage 6**: M365 Copilot Chat API
 7. **Stage 7**: Production Polish
 
@@ -41,7 +41,8 @@ m365copilot-mcp/
 │   │   ├── validation.ts     # Input validation helpers
 │   │   └── httpClient.ts     # Graph REST API client (Stage 4+)
 │   ├── tools/                # Tool implementations (Stage 4+)
-│   │   └── retrieval.ts      # M365 Copilot Retrieval API
+│   │   ├── retrieval.ts      # M365 Copilot Retrieval API
+│   │   └── search.ts         # M365 Copilot Search API
 │   └── auth/                 # Authentication modules (Stage 3+)
 │       └── identity.ts       # Azure Identity integration
 ├── build/                    # Compiled JavaScript (generated)
@@ -126,12 +127,28 @@ Completed features:
 - Simplicity over abstraction: no unnecessary parameters or configuration options
 - Result size control: Limited to prevent agent overload while maintaining good coverage
 
-### Stage 5-6: Additional API Integration
-Each stage will:
-- Add specific API tool implementations
-- Reuse httpClient utility for consistency
-- Include comprehensive error handling
-- Provide clear documentation
+### Stage 5: M365 Copilot Search API (COMPLETED)
+Completed features:
+- Implemented Copilot Search API tool (`src/tools/search.ts`)
+- Added `m365copilotsearch` MCP tool - document search across M365 content
+- Single endpoint call to `/beta/copilot/search` (searches all sources automatically)
+- Returns document links with preview text and resource type
+- Simple response format: totalCount, searchHits array with webUrl/preview/resourceType
+- Reuses httpClient utility from Stage 4
+- Comprehensive error handling consistent with retrieval tool
+
+**Implementation Approach:**
+- Direct REST API calls via fetch() using existing httpClient utility
+- Single POST request with `{ query: string }` parameter
+- User-configurable: query only (no unnecessary parameters)
+- Simplicity: Microsoft Graph API handles multi-source search automatically
+- Returns raw API response with document metadata for agent use
+
+### Stage 6: M365 Copilot Chat API
+Will implement:
+- Copilot Chat API integration
+- Conversational AI capabilities
+- Follow same pattern as Retrieval and Search
 
 ### Stage 7: Production Polish
 Final stage will:

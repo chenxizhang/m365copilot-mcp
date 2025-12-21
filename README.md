@@ -2,9 +2,9 @@
 
 An MCP (Model Context Protocol) server that integrates with Microsoft 365 Copilot APIs, providing access to Retrieval, Search, and Chat capabilities.
 
-## Current Status: Stage 4 - M365 Copilot Retrieval API
+## Current Status: Stage 5 - M365 Copilot Search API
 
-This stage adds the first production tool - Copilot Retrieval API - enabling RAG-based search across SharePoint, OneDrive, and Copilot connectors with full Azure AD authentication.
+This stage adds the Search API tool, enabling document discovery across SharePoint, OneDrive, and other M365 content sources alongside the existing Retrieval API for RAG-based content extraction.
 
 ## Prerequisites
 
@@ -85,7 +85,38 @@ Returns JSON with `retrievalHits` array containing:
 
 **Difference from Search:**
 - **Retrieval** (this tool): Returns text content extracts for RAG/grounding - ideal for answering questions
-- **Search** (coming soon): Returns document links only - ideal for finding documents
+- **Search** (see below): Returns document links with previews - ideal for finding specific documents
+
+### m365copilotsearch
+
+The Microsoft 365 Copilot Search tool searches across SharePoint, OneDrive, and other M365 content to find relevant documents. Returns document links with preview text for document discovery workflows.
+
+**What it does:**
+- Performs document search across user's M365 content sources
+- **Automatically searches all available sources** (SharePoint, OneDrive, etc.)
+- Returns document metadata: web URLs, preview text, resource types
+- Respects user's access permissions automatically
+- Ideal for finding specific documents or files
+
+**Parameters:**
+- `query` (string, required): Natural language search query to find relevant documents
+
+**Example usage:**
+- Ask Claude: "Use m365copilotsearch to find VPN setup documents"
+- Ask Claude: "Search for documents about Q4 budget planning"
+- Ask Claude: "Find files mentioning the corporate network configuration"
+
+**Response format:**
+Returns JSON with:
+- `totalCount`: Total number of search results found
+- `searchHits`: Array of results containing:
+  - `webUrl`: Direct link to the document
+  - `preview`: Text preview/snippet from the document
+  - `resourceType`: Type of resource (e.g., "driveItem")
+
+**Difference from Retrieval:**
+- **Search** (this tool): Returns document links/previews - ideal for finding documents
+- **Retrieval** (see above): Returns text content extracts - ideal for answering questions with context
 
 ## Development
 
@@ -119,7 +150,8 @@ m365copilot-mcp/
 │   │   ├── validation.ts     # Input validation helpers
 │   │   └── httpClient.ts     # Graph REST API client
 │   ├── tools/                # Tool implementations
-│   │   └── retrieval.ts      # Copilot Retrieval API
+│   │   ├── retrieval.ts      # Copilot Retrieval API
+│   │   └── search.ts         # Copilot Search API
 │   └── auth/                 # Authentication modules
 │       └── identity.ts       # Azure Identity integration
 ├── build/                    # Compiled JavaScript (generated)
@@ -132,6 +164,12 @@ m365copilot-mcp/
 ```
 
 ## Key Features
+
+### Stage 5: M365 Copilot Search API
+- **Copilot Search API**: Document search across all M365 content sources
+- **Document discovery**: Returns document links with preview text
+- **Simple integration**: Single endpoint automatically searches all sources
+- **Complementary to Retrieval**: Search finds documents, Retrieval extracts content
 
 ### Stage 4: M365 Copilot Retrieval API
 - **Copilot Retrieval API**: RAG-based search across SharePoint, OneDrive, and Copilot connectors
@@ -183,7 +221,6 @@ LOG_LEVEL=DEBUG  # Optional, defaults to INFO
 
 ## Next Stages
 
-- **Stage 5**: M365 Copilot Search API
 - **Stage 6**: M365 Copilot Chat API
 - **Stage 7**: Production Polish
 

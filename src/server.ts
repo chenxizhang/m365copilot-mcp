@@ -9,6 +9,7 @@ import { formatErrorResponse, ValidationError } from './utils/errors.js';
 import { requireString, optionalString } from './utils/validation.js';
 import { requireAuthentication } from './auth/identity.js';
 import { copilotRetrieval } from './tools/retrieval.js';
+import { copilotSearch } from './tools/search.js';
 
 /**
  * Create and configure the MCP server
@@ -17,7 +18,7 @@ export function createServer(): Server {
   const server = new Server(
     {
       name: 'm365-copilot-mcp',
-      version: '0.4.0',
+      version: '0.5.0',
     },
     {
       capabilities: {
@@ -40,6 +41,20 @@ export function createServer(): Server {
           },
         },
         required: ['queryString'],
+      },
+    },
+    {
+      name: 'm365copilotsearch',
+      description: 'The Microsoft 365 Copilot Search tool searches across SharePoint, OneDrive, and other M365 content to find relevant documents. Returns document links with preview text. Use this when you need to find specific documents or files, as opposed to retrieval which returns text content for grounding.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          query: {
+            type: 'string',
+            description: 'Natural language search query to find relevant documents in Microsoft 365',
+          },
+        },
+        required: ['query'],
       },
     },
   ];
@@ -68,6 +83,27 @@ export function createServer(): Server {
 
           // Call the Copilot Retrieval API
           const result = await copilotRetrieval(queryString);
+
+          // Return the raw JSON response
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(result, null, 2),
+              },
+            ],
+          };
+        }
+
+        case 'm365copilotsearch': {
+          // Require authentication for this tool
+          await requireAuthentication();
+
+          // Validate and extract parameters
+          const query = requireString(args?.query, 'query');
+
+          // Call the Copilot Search API
+          const result = await copilotSearch(query);
 
           // Return the raw JSON response
           return {
