@@ -41,7 +41,7 @@ claude mcp add --transport stdio m365-copilot -- npx -y m365-copilot-mcp
 
 **Windows:**
 ```bash
-claude mcp add --transport stdio m365-copilot -- cmd /c npx -y m365-copilot-mcp
+claude mcp add --transport stdio m365-copilot -- cmd /c "npx -y m365-copilot-mcp"
 ```
 
 The `-y` flag automatically accepts prompts, and `npx` will download and run the latest version of the package.
@@ -117,7 +117,7 @@ claude mcp add --transport stdio m365-copilot \
 
 **Windows:**
 ```bash
-claude mcp add --transport stdio m365-copilot --env AZURE_CLIENT_ID=your-client-id --env AZURE_TENANT_ID=your-tenant-id -- cmd /c npx -y m365-copilot-mcp
+claude mcp add --transport stdio m365-copilot --env AZURE_CLIENT_ID=your-client-id --env AZURE_TENANT_ID=your-tenant-id -- cmd /c "npx -y m365-copilot-mcp"
 ```
 
 #### GitHub Copilot (VS Code)
