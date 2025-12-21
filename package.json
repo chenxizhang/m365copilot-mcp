@@ -3,6 +3,9 @@
   "version": "0.6.1",
   "description": "Model Context Protocol (MCP) server providing Claude AI with access to Microsoft 365 Copilot APIs - Retrieval, Search, and Chat capabilities",
   "main": "build/index.js",
+  "bin": {
+    "m365-copilot-mcp": "build/index.js"
+  },
   "type": "module",
   "engines": {
     "node": ">=20.0.0"
