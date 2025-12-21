@@ -32,7 +32,16 @@ export function createServer(): Server {
   const tools: Tool[] = [
     {
       name: 'm365copilotretrieval',
-      description: 'The Microsoft 365 Copilot Retrieval tool allows for the retrieval of relevant text extracts from SharePoint and OneDrive content that the calling user has access to, while respecting the defined access controls within the tenant. The tool searches both SharePoint and OneDrive in parallel and returns combined results sorted by relevance. Use the Retrieval API to ground your generative AI solutions with Microsoft 365 data while optimizing for context recall.',
+      description: `Retrieves relevant text extracts from user's SharePoint and OneDrive content to answer questions using RAG (Retrieval-Augmented Generation). Returns text snippets with relevance scores - ideal for grounding answers in M365 data.
+
+Use this when:
+- User asks questions that need answers from their M365 content (e.g., "What did the team decide about the project?")
+- You need text content to support your response with specific information
+- Grounding AI responses with actual document content is required
+
+Example queries: "project deadlines", "budget approval status", "team meeting notes about feature X"
+
+DO NOT use for: Finding document links (use m365copilotsearch instead) or interactive conversations (use m365copilotchat instead).`,
       inputSchema: {
         type: 'object',
         properties: {
@@ -46,7 +55,16 @@ export function createServer(): Server {
     },
     {
       name: 'm365copilotsearch',
-      description: 'The Microsoft 365 Copilot Search tool searches across SharePoint, OneDrive, and other M365 content to find relevant documents. Returns document links with preview text. Use this when you need to find specific documents or files, as opposed to retrieval which returns text content for grounding.',
+      description: `Searches across SharePoint, OneDrive, and other M365 content to find and locate specific documents. Returns document links with preview text - ideal for document discovery and navigation.
+
+Use this when:
+- User wants to find or locate specific files/documents (e.g., "Find the VPN setup guide")
+- User needs document links to open or share
+- Building a list of relevant documents
+
+Example queries: "quarterly budget spreadsheet", "network configuration document", "presentation about product launch"
+
+DO NOT use for: Extracting text to answer questions (use m365copilotretrieval instead) or asking Copilot questions (use m365copilotchat instead).`,
       inputSchema: {
         type: 'object',
         properties: {
@@ -60,7 +78,19 @@ export function createServer(): Server {
     },
     {
       name: 'm365copilotchat',
-      description: 'The Microsoft 365 Copilot Chat tool enables conversational AI interactions with your M365 data. It maintains conversation context within a session, allowing multi-turn dialogues. Use this when you need to have interactive conversations with Copilot about your Microsoft 365 content, schedule, or tasks.',
+      description: `Enables conversational AI interactions with Microsoft 365 Copilot. Maintains conversation context for multi-turn dialogues - ideal for complex queries, follow-up questions, and time-aware requests.
+
+Use this when:
+- User wants to have a conversation with Copilot (e.g., "Ask Copilot about my schedule")
+- Questions involve time, calendar, or scheduling (e.g., "What meetings do I have tomorrow?")
+- Follow-up questions or clarifications are needed
+- Complex queries that benefit from Copilot's reasoning (e.g., "Summarize team discussions and action items")
+
+Example messages: "What's on my calendar tomorrow?", "Summarize recent emails about the project", "Who should I follow up with this week?"
+
+Requires timezone parameter (IANA format: "America/New_York", "Europe/London", "Asia/Shanghai").
+
+DO NOT use for: Simple text retrieval (use m365copilotretrieval instead) or finding documents (use m365copilotsearch instead).`,
       inputSchema: {
         type: 'object',
         properties: {

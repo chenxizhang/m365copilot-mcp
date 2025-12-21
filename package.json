@@ -1,22 +1,53 @@
 {
   "name": "m365-copilot-mcp",
   "version": "0.6.0",
-  "description": "MCP server for Microsoft 365 Copilot APIs integration",
+  "description": "Model Context Protocol (MCP) server providing Claude AI with access to Microsoft 365 Copilot APIs - Retrieval, Search, and Chat capabilities",
   "main": "build/index.js",
   "type": "module",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "build": "tsc",
     "watch": "tsc --watch",
-    "start": "node build/index.js"
+    "start": "node build/index.js",
+    "prepublishOnly": "npm run build"
   },
   "keywords": [
     "mcp",
+    "model-context-protocol",
     "microsoft-365",
+    "m365",
     "copilot",
-    "graph-api"
+    "microsoft-copilot",
+    "graph-api",
+    "microsoft-graph",
+    "sharepoint",
+    "onedrive",
+    "azure",
+    "claude",
+    "anthropic",
+    "ai",
+    "rag",
+    "retrieval",
+    "search",
+    "chat"
   ],
-  "author": "",
+  "author": "chenxizhang",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/chenxizhang/m365copilot-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/chenxizhang/m365copilot-mcp/issues"
+  },
+  "homepage": "https://github.com/chenxizhang/m365copilot-mcp#readme",
+  "files": [
+    "build",
+    "README.md",
+    "LICENSE"
+  ],
   "dependencies": {
     "@azure/identity": "^4.13.0",
     "@azure/identity-cache-persistence": "^1.2.0",
