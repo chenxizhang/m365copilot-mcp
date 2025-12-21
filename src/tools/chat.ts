@@ -64,7 +64,7 @@ async function createConversation(accessToken: string): Promise<CopilotConversat
  * Send a chat message to a Copilot conversation
  * @param conversationId - The conversation ID to send the message to
  * @param message - The message text to send
- * @param timeZone - The user's timezone (e.g., 'America/New_York', 'Asia/Shanghai')
+ * @param timeZone - User's timezone in IANA format (e.g., 'America/New_York', 'Asia/Shanghai')
  * @param accessToken - Access token for authentication
  * @returns Chat response with conversation history
  */
@@ -80,17 +80,19 @@ async function sendChatMessage(
     timeZone,
   });
 
+  const requestBody: any = {
+    message: {
+      text: message,
+    },
+    locationHint: {
+      timeZone,
+    },
+  };
+
   const result = await callGraphApi(
     `/beta/copilot/conversations/${conversationId}/chat`,
     'POST',
-    {
-      message: {
-        text: message,
-      },
-      locationHint: {
-        timeZone,
-      },
-    },
+    requestBody,
     accessToken
   );
 
@@ -109,13 +111,13 @@ async function sendChatMessage(
  *
  * @param message - The message/question to send to Copilot
  * @param conversationId - Optional conversation ID to continue an existing conversation
- * @param timeZone - User's timezone (defaults to 'UTC')
+ * @param timeZone - User's timezone in IANA format (e.g., 'America/New_York', 'Asia/Shanghai')
  * @returns Chat response with conversation messages
  */
 export async function copilotChat(
   message: string,
-  conversationId?: string,
-  timeZone: string = 'UTC'
+  conversationId: string | undefined,
+  timeZone: string
 ): Promise<ChatResponse> {
   info('Calling Copilot Chat API', {
     messageLength: message.length,

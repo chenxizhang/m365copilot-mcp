@@ -74,10 +74,10 @@ export function createServer(): Server {
           },
           timeZone: {
             type: 'string',
-            description: 'User timezone in IANA format (e.g., "America/New_York", "Asia/Shanghai", "Europe/London"). Defaults to "UTC" if not provided.',
+            description: 'User timezone in IANA format (e.g., "America/New_York", "Asia/Shanghai", "Europe/London"). REQUIRED - Must be a valid IANA timezone identifier.',
           },
         },
-        required: ['message'],
+        required: ['message', 'timeZone'],
       },
     },
   ];
@@ -145,8 +145,8 @@ export function createServer(): Server {
 
           // Validate and extract parameters
           const message = requireString(args?.message, 'message');
+          const timeZone = requireString(args?.timeZone, 'timeZone');
           const conversationId = optionalString(args?.conversationId, 'conversationId');
-          const timeZone = optionalString(args?.timeZone, 'timeZone') || 'UTC';
 
           // Call the Copilot Chat API
           const result = await copilotChat(message, conversationId, timeZone);
