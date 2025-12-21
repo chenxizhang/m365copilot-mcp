@@ -18,6 +18,8 @@ The `m365-copilot-mcp` server provides three powerful capabilities for AI assist
 | **🔍 Search** | Find specific documents and files | Locate files, discover relevant content across your M365 environment |
 | **💬 Chat** | Conversational AI powered by M365 Copilot | Ask about your schedule, get summaries, interact with time-aware queries |
 
+**Learn more:** These capabilities are built on the official [Microsoft 365 Copilot APIs](https://learn.microsoft.com/en-us/microsoft-365-copilot/extensibility/copilot-apis-overview).
+
 ## Prerequisites
 
 - **Node.js 20+** - Runtime environment
@@ -258,7 +260,8 @@ This project is actively maintained. We welcome your feedback and contributions!
 
 - **Report Issues:** [GitHub Issues](https://github.com/chenxizhang/m365copilot-mcp/issues)
 - **Feature Requests:** [GitHub Discussions](https://github.com/chenxizhang/m365copilot-mcp/discussions)
-- **Documentation:** [GitHub Repository](https://github.com/chenxizhang/m365copilot-mcp)
+- **Project Documentation:** [GitHub Repository](https://github.com/chenxizhang/m365copilot-mcp)
+- **API Documentation:** [Microsoft 365 Copilot APIs](https://learn.microsoft.com/en-us/microsoft-365-copilot/extensibility/copilot-apis-overview)
 
 ## License
 
