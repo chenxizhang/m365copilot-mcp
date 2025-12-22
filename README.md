@@ -2,6 +2,7 @@
 
 [![CI](https://github.com/chenxizhang/m365copilot-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/chenxizhang/m365copilot-mcp/actions/workflows/ci.yml)
 [![npm version](https://badge.fury.io/js/m365-copilot-mcp.svg)](https://www.npmjs.com/package/m365-copilot-mcp)
+[![npm downloads](https://img.shields.io/npm/dm/m365-copilot-mcp)](https://www.npmjs.com/package/m365-copilot-mcp)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 > **Note:** This is an unofficial MCP server, but developed by Microsoft engineers, integrating the latest Microsoft 365 Copilot APIs. We welcome your feedback and contributions!
