@@ -104,6 +104,20 @@ On first use, the server will automatically open your browser for Microsoft 365 
 
 If you have security concerns or organizational requirements, you can use your own Azure AD application instead of the built-in one. However, **this is completely optional** - the default configuration is secure and sufficient for most users.
 
+#### Azure AD App Registration Setup
+
+When creating your own Azure AD app, you **must** register the redirect URI in your app registration:
+
+1. Go to [Azure Portal](https://portal.azure.com) → Azure Active Directory → App registrations
+2. Select your application (or create a new one)
+3. Navigate to **Authentication** → **Add a platform** → **Mobile and desktop applications**
+4. Add the redirect URI: **`http://localhost`**
+5. Save the configuration
+
+**Note:** The default redirect URI is `http://localhost`. Azure AD will match this URI regardless of the actual port used by the application, making it work seamlessly with dynamic port allocation. You can customize it using the `REDIRECT_URI` environment variable if needed (e.g., `https://login.microsoftonline.com/common/oauth2/nativeclient`).
+
+#### Configuration
+
 To use a custom Azure AD app, provide environment variables during configuration:
 
 #### Claude Code
@@ -139,6 +153,9 @@ Add environment variables to your configuration:
   }
 }
 ```
+
+**Optional Environment Variables:**
+- `REDIRECT_URI`: Custom redirect URI (default: `http://localhost`, alternative: `https://login.microsoftonline.com/common/oauth2/nativeclient`)
 
 **Required Microsoft Graph API Permissions:**
 - Sites.Read.All
@@ -227,10 +244,13 @@ The MCP server acts as a secure bridge between your AI assistant and Microsoft 3
 
 ### Authentication Issues
 
-**Problem:** Browser doesn't open for login
-**Solution:** Manually authenticate by setting `AZURE_CLIENT_ID` in your environment
+**Problem:** Redirect URI mismatch error during authentication  
+**Solution:** Ensure `http://localhost` is registered in your Azure AD app registration under **Authentication → Mobile and desktop applications**. Azure AD will match this URI regardless of the actual port used. If using a custom redirect URI, set the `REDIRECT_URI` environment variable to match your Azure AD configuration.
 
-**Problem:** "Permission denied" errors
+**Problem:** Browser doesn't open for login  
+**Solution:** Check your firewall settings or try a custom redirect URI using the `REDIRECT_URI` environment variable
+
+**Problem:** "Permission denied" errors  
 **Solution:** Ensure your Microsoft 365 account has access to the requested resources
 
 ### Connection Issues

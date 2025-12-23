@@ -156,6 +156,8 @@ Completed features:
 - Added authentication tools (authConfig, authTest)
 - **Authentication Enforcement**: All tools except authTest require authentication
 - Auto-authentication on server startup with fallback to manual authentication
+- **Fixed Redirect URI**: Uses `http://localhost` as default redirect URI (Azure AD ignores port for localhost URIs, allowing dynamic port allocation)
+- **Customizable Redirect URI**: Can be overridden via `REDIRECT_URI` environment variable
 - **Required Microsoft Graph API Permissions**:
   - Sites.Read.All - Access SharePoint sites
   - Mail.Read - Read user mail
@@ -165,6 +167,12 @@ Completed features:
   - ChannelMessage.Read.All - Read Teams channel messages
   - ExternalItem.Read.All - Read external items
   - Files.Read.All - Read all files
+
+**Implementation Notes:**
+- Uses `http://localhost` as default redirect URI (no specific port)
+- Azure AD matches this URI regardless of the actual port used by the application
+- Solves the random port issue where users couldn't pre-register redirect URIs
+- Alternative redirect URI supported: `https://login.microsoftonline.com/common/oauth2/nativeclient`
 
 ### Stage 4: M365 Copilot Retrieval API (COMPLETED)
 Completed features:
@@ -355,13 +363,15 @@ Optional environment configuration via `.env` file:
 - `AZURE_TENANT_ID`: Override default 'common' tenant (optional)
 - `AZURE_CLIENT_ID`: Override default multi-tenant app (optional)
 - `AZURE_CLIENT_SECRET`: Required for ClientSecret auth method only
-- `AUTH_METHOD`: Choose authentication method (DeviceCode, ClientSecret, ManagedIdentity)
+- `AUTH_METHOD`: Choose authentication method (InteractiveBrowser)
+- `REDIRECT_URI`: Override default redirect URI (optional, default: `http://localhost`)
 - `LOG_LEVEL`: Set logging level (DEBUG, INFO, WARN, ERROR)
 
 **Default Configuration:**
 - ClientID: `f44ab954-9e38-4330-aa49-e93d73ab0ea6` (built-in multi-tenant app)
 - TenantID: `common` (multi-tenant support)
-- AuthMethod: `DeviceCode` (no secrets needed)
+- AuthMethod: `InteractiveBrowser` (browser-based authentication)
+- RedirectURI: `http://localhost` (Azure AD ignores port for localhost URIs)
 
 ### Stage 4+
 Will add:

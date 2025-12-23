@@ -105,6 +105,15 @@ export class AuthenticationManager {
   }
 
   /**
+   * Get the redirect URI for interactive browser authentication
+   * Defaults to http://localhost (Azure AD ignores port for localhost URIs)
+   * Can be overridden via REDIRECT_URI environment variable
+   */
+  private getRedirectUri(): string {
+    return process.env.REDIRECT_URI || 'http://localhost';
+  }
+
+  /**
    * Load configuration from environment variables
    * Uses default multi-tenant app registration with option to override
    */
@@ -151,18 +160,21 @@ export class AuthenticationManager {
         info('Found existing authentication record - will attempt silent authentication');
       }
 
+      // Use http://localhost as redirect URI (Azure AD ignores the port for localhost)
+      // This allows the SDK to use any available port while matching the registered URI
+      const redirectUri = this.getRedirectUri();
+
       this.credential = new InteractiveBrowserCredential({
         tenantId,
         clientId,
-        // redirectUri is not needed for Node.js - it automatically starts a local HTTP server
-        // User must configure http://localhost in Azure AD app registration
+        redirectUri,
         authenticationRecord: authRecord || undefined,
         tokenCachePersistenceOptions: {
           enabled: true,
           name: 'm365-copilot-mcp-cache',
         },
       });
-      info('Initialized InteractiveBrowserCredential with persistent token cache');
+      info('Initialized InteractiveBrowserCredential with persistent token cache', { redirectUri });
     } catch (error) {
       logError('Failed to initialize authentication', error);
       throw error;
