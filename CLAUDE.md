@@ -267,15 +267,27 @@ Completed features:
     - Uses npm provenance for supply chain security
     - Automatic build via prepublishOnly script
     - Requires NPM_TOKEN secret in repository settings
+- **Logout functionality**: Added `m365copilotlogout` tool for account switching
+  - Clears all cached credentials (authentication record and token cache)
+  - Does NOT require authentication to use
+  - Deletes both AuthenticationRecord file (`~/.IdentityService/m365-copilot-mcp-auth.json`)
+  - Deletes persistent token cache file (cross-platform support):
+    - Windows: `%LOCALAPPDATA%\.IdentityService\m365-copilot-mcp-cache`
+    - macOS: `~/Library/Application Support/.IdentityService/m365-copilot-mcp-cache`
+    - Linux: `~/.IdentityService/m365-copilot-mcp-cache`
+  - Resets in-memory authentication state
+  - User must restart MCP server for full effect
+  - Enables easy switching between different Microsoft 365 accounts
 
 **Ready for npm publication with automated CI/CD!**
 
 **Implementation Notes:**
-- Three tools (retrieval, search, chat) now have distinct, well-documented use cases
+- Four tools (logout, retrieval, search, chat) now have distinct, well-documented use cases
 - AI agents can easily understand which tool to use based on user intent
 - End users have clear, simple instructions without technical complexity
 - Package metadata optimized for npm search and discovery
 - Fully automated CI/CD pipeline for quality assurance and publishing
+- Logout functionality provides clean account switching without manual file deletion
 
 ### Stage 8: Future Enhancements (Optional)
 Potential future improvements:

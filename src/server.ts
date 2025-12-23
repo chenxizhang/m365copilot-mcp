@@ -7,7 +7,7 @@ import {
 import { logger, info, error as logError } from './utils/logger.js';
 import { formatErrorResponse, ValidationError } from './utils/errors.js';
 import { requireString, optionalString } from './utils/validation.js';
-import { requireAuthentication } from './auth/identity.js';
+import { requireAuthentication, logout } from './auth/identity.js';
 import { copilotRetrieval } from './tools/retrieval.js';
 import { copilotSearch } from './tools/search.js';
 import { copilotChat } from './tools/chat.js';
@@ -30,6 +30,27 @@ export function createServer(): Server {
 
   // Define available tools
   const tools: Tool[] = [
+    {
+      name: 'm365copilotlogout',
+      description: `Logs out the current user by clearing all cached credentials and authentication state. This tool does not require authentication and can be called at any time.
+
+Use this when:
+- User wants to switch to a different Microsoft 365 account
+- User wants to clear their authentication session
+- User explicitly requests to logout or sign out
+
+After calling this tool:
+- All cached credentials will be cleared (authentication record and token cache)
+- User MUST restart the MCP server for changes to take full effect
+- On next tool call (after restart), user will be prompted to log in again
+
+IMPORTANT: Tell the user they need to restart the MCP server for the logout to take full effect.`,
+      inputSchema: {
+        type: 'object',
+        properties: {},
+        required: [],
+      },
+    },
     {
       name: 'm365copilotretrieval',
       description: `Retrieves relevant text extracts from user's SharePoint and OneDrive content to answer questions using RAG (Retrieval-Augmented Generation). Returns text snippets with relevance scores - ideal for grounding answers in M365 data.
@@ -127,6 +148,36 @@ DO NOT use for: Simple text retrieval (use m365copilotretrieval instead) or find
 
     try {
       switch (name) {
+        case 'm365copilotlogout': {
+          // No authentication required for logout
+          info('Processing logout request');
+
+          // Call the logout function
+          logout();
+
+          // Return success message with restart instructions
+          return {
+            content: [
+              {
+                type: 'text',
+                text: JSON.stringify(
+                  {
+                    success: true,
+                    message: 'Logout successful. All cached credentials have been cleared.',
+                    nextSteps: [
+                      'You MUST restart the MCP server for the logout to take full effect.',
+                      'After restart, you will be prompted to log in again on the next tool call.',
+                      'To restart: stop the current MCP server session and start it again.',
+                    ],
+                  },
+                  null,
+                  2
+                ),
+              },
+            ],
+          };
+        }
+
         case 'm365copilotretrieval': {
           // Require authentication for this tool
           await requireAuthentication();
