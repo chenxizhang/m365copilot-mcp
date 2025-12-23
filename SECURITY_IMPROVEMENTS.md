@@ -498,8 +498,8 @@ const SENSITIVE_FIELDS = [
   'refresh_token',
   'password',
   'secret',
-  'clientsecret',
   'client_secret',
+  'clientsecret',
   'authorization',
   'bearer',
   'apikey',
@@ -510,6 +510,11 @@ const SENSITIVE_FIELDS = [
  * Mask for sensitive data
  */
 const MASK = '***REDACTED***';
+
+/**
+ * Pre-compiled regex for JWT detection (performance optimization)
+ */
+const JWT_PATTERN = /^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+$/;
 
 /**
  * Check if a field name is sensitive
@@ -546,8 +551,8 @@ export function sanitizeObject(obj: any): any {
       sanitized[key] = sanitizeObject(value);
     } else if (typeof value === 'string' && value.length > 50) {
       // Long strings might be tokens - mask them
-      if (value.startsWith('eyJ') || value.match(/^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+$/)) {
-        // Looks like a JWT
+      if (value.startsWith('eyJ') || JWT_PATTERN.test(value)) {
+        // Looks like a JWT (uses pre-compiled regex for performance)
         sanitized[key] = MASK;
       } else {
         sanitized[key] = value;
@@ -561,6 +566,11 @@ export function sanitizeObject(obj: any): any {
 }
 
 /**
+ * Maximum number of stack trace lines to include in sanitized errors
+ */
+const MAX_STACK_TRACE_LINES = 5;
+
+/**
  * Sanitize error objects
  */
 export function sanitizeError(error: any): any {
@@ -568,7 +578,7 @@ export function sanitizeError(error: any): any {
     return {
       name: error.name,
       message: error.message,
-      stack: error.stack?.split('\n').slice(0, 5).join('\n'), // Limit stack trace
+      stack: error.stack?.split('\n').slice(0, MAX_STACK_TRACE_LINES).join('\n'), // Limit stack trace
     };
   }
   return sanitizeObject(error);
@@ -636,11 +646,34 @@ interface TokenUsageEvent {
   errorType?: string;
 }
 
+/**
+ * Configuration for anomaly detection thresholds
+ * These can be overridden via environment variables
+ */
+interface AnomalyConfig {
+  maxEvents: number;
+  maxRequestsPerMinute: number;
+  maxFailuresPerHour: number;
+}
+
+/**
+ * Load anomaly detection configuration from environment or use defaults
+ */
+function loadAnomalyConfig(): AnomalyConfig {
+  return {
+    maxEvents: parseInt(process.env.ANOMALY_MAX_EVENTS || '100', 10),
+    maxRequestsPerMinute: parseInt(process.env.ANOMALY_MAX_REQUESTS_PER_MINUTE || '10', 10),
+    maxFailuresPerHour: parseInt(process.env.ANOMALY_MAX_FAILURES_PER_HOUR || '5', 10),
+  };
+}
+
 class AnomalyDetector {
   private events: TokenUsageEvent[] = [];
-  private readonly MAX_EVENTS = 100;
-  private readonly MAX_REQUESTS_PER_MINUTE = 10;
-  private readonly MAX_FAILURES_PER_HOUR = 5;
+  private config: AnomalyConfig;
+  
+  constructor(config?: AnomalyConfig) {
+    this.config = config || loadAnomalyConfig();
+  }
 
   /**
    * Record a token request event
@@ -653,8 +686,8 @@ class AnomalyDetector {
       errorType,
     });
 
-    // Keep only recent events
-    if (this.events.length > this.MAX_EVENTS) {
+    // Keep only recent events (configurable limit)
+    if (this.events.length > this.config.maxEvents) {
       this.events.shift();
     }
 
@@ -663,30 +696,30 @@ class AnomalyDetector {
   }
 
   /**
-   * Check for anomalous patterns
+   * Check for anomalous patterns using configurable thresholds
    */
   private checkAnomalies(): void {
     const now = new Date();
     const oneMinuteAgo = new Date(now.getTime() - 60 * 1000);
     const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
 
-    // Check 1: Too many requests in short time
+    // Check 1: Too many requests in short time (configurable threshold)
     const recentRequests = this.events.filter(e => e.timestamp > oneMinuteAgo);
-    if (recentRequests.length > this.MAX_REQUESTS_PER_MINUTE) {
+    if (recentRequests.length > this.config.maxRequestsPerMinute) {
       warn('Anomaly detected: Too many token requests in short time', {
         count: recentRequests.length,
-        threshold: this.MAX_REQUESTS_PER_MINUTE,
+        threshold: this.config.maxRequestsPerMinute,
       });
     }
 
-    // Check 2: Too many failures
+    // Check 2: Too many failures (configurable threshold)
     const recentFailures = this.events.filter(
       e => e.timestamp > oneHourAgo && !e.success
     );
-    if (recentFailures.length > this.MAX_FAILURES_PER_HOUR) {
+    if (recentFailures.length > this.config.maxFailuresPerHour) {
       warn('Anomaly detected: Too many authentication failures', {
         count: recentFailures.length,
-        threshold: this.MAX_FAILURES_PER_HOUR,
+        threshold: this.config.maxFailuresPerHour,
       });
     }
 
