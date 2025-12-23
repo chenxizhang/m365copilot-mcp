@@ -215,6 +215,23 @@ Enables conversational interactions with Microsoft 365 Copilot, with awareness o
 
 **Note:** This tool requires your timezone in IANA format (e.g., "America/New_York", "Europe/London", "Asia/Shanghai").
 
+## Account Management
+
+### Switching Accounts (m365copilotlogout)
+
+If you need to switch to a different Microsoft 365 account, you can use the logout tool to clear cached credentials.
+
+**How to use:**
+- Ask your AI assistant: "Logout from Microsoft 365" or "Switch to a different account"
+- The tool will clear all cached authentication data
+- **Restart your MCP server** for the logout to take full effect
+- On next use, you'll be prompted to log in with a different account
+
+This is useful for:
+- Switching between work and personal M365 accounts
+- Troubleshooting authentication issues
+- Testing with different user permissions
+
 ## How It Works
 
 ```
@@ -244,14 +261,17 @@ The MCP server acts as a secure bridge between your AI assistant and Microsoft 3
 
 ### Authentication Issues
 
-**Problem:** Redirect URI mismatch error during authentication  
+**Problem:** Want to switch to a different Microsoft 365 account
+**Solution:** Use the `m365copilotlogout` tool to clear cached credentials, then restart the MCP server. On next use, you'll be prompted to log in with a different account.
+
+**Problem:** Redirect URI mismatch error during authentication
 **Solution:** Ensure `http://localhost` is registered in your Azure AD app registration under **Authentication → Mobile and desktop applications**. Azure AD will match this URI regardless of the actual port used. If using a custom redirect URI, set the `REDIRECT_URI` environment variable to match your Azure AD configuration.
 
-**Problem:** Browser doesn't open for login  
+**Problem:** Browser doesn't open for login
 **Solution:** Check your firewall settings or try a custom redirect URI using the `REDIRECT_URI` environment variable
 
-**Problem:** "Permission denied" errors  
-**Solution:** Ensure your Microsoft 365 account has access to the requested resources
+**Problem:** "Permission denied" errors
+**Solution:** Ensure your Microsoft 365 account has access to the requested resources. If you recently changed permissions or accounts, try using the logout tool and re-authenticating.
 
 ### Connection Issues
 

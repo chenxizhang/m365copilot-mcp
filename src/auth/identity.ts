@@ -364,6 +364,80 @@ export function isAuthenticationReady(): boolean {
 }
 
 /**
+ * Get the path to the persistent token cache file
+ * This matches the cache name used in tokenCachePersistenceOptions
+ */
+function getTokenCachePath(): string {
+  const homeDir = os.homedir();
+
+  // Different platforms store cache in different locations
+  if (process.platform === 'win32') {
+    // Windows: %LOCALAPPDATA%\.IdentityService\m365-copilot-mcp-cache
+    const localAppData = process.env.LOCALAPPDATA || path.join(homeDir, 'AppData', 'Local');
+    return path.join(localAppData, '.IdentityService', 'm365-copilot-mcp-cache');
+  } else if (process.platform === 'darwin') {
+    // macOS: ~/Library/Application Support/.IdentityService/m365-copilot-mcp-cache
+    return path.join(homeDir, 'Library', 'Application Support', '.IdentityService', 'm365-copilot-mcp-cache');
+  } else {
+    // Linux: ~/.IdentityService/m365-copilot-mcp-cache
+    return path.join(homeDir, '.IdentityService', 'm365-copilot-mcp-cache');
+  }
+}
+
+/**
+ * Logout - clears all cached credentials and authentication state
+ * This function will:
+ * 1. Delete the AuthenticationRecord file from disk
+ * 2. Delete the persistent token cache file
+ * 3. Clear in-memory token cache
+ * 4. Reset the authentication manager singleton
+ * 5. Reset the isAuthenticated flag
+ *
+ * Note: User must restart the MCP server for changes to take full effect
+ */
+export function logout(): void {
+  try {
+    info('Starting logout process');
+
+    // Get current auth manager to access the auth record path
+    const manager = authManager || new AuthenticationManager();
+    const authRecordPath = (manager as any).getAuthRecordPath();
+
+    // Delete the authentication record file if it exists
+    if (fs.existsSync(authRecordPath)) {
+      fs.unlinkSync(authRecordPath);
+      info('Deleted authentication record file', { path: authRecordPath });
+    } else {
+      info('No authentication record file found to delete', { path: authRecordPath });
+    }
+
+    // Delete the persistent token cache file if it exists
+    const tokenCachePath = getTokenCachePath();
+    if (fs.existsSync(tokenCachePath)) {
+      fs.unlinkSync(tokenCachePath);
+      info('Deleted persistent token cache file', { path: tokenCachePath });
+    } else {
+      info('No persistent token cache file found to delete', { path: tokenCachePath });
+    }
+
+    // Clear in-memory token cache if auth manager exists
+    if (authManager) {
+      authManager.clearCache();
+      info('Cleared in-memory token cache');
+    }
+
+    // Reset the authentication manager singleton
+    resetAuthManager();
+    info('Reset authentication manager');
+
+    info('Logout completed successfully');
+  } catch (error) {
+    logError('Error during logout', error);
+    throw new AuthenticationError('Failed to logout', { error });
+  }
+}
+
+/**
  * Require authentication - performs lazy authentication on first call
  * This function will:
  * 1. Check if already authenticated (fast path)
