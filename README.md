@@ -27,6 +27,22 @@ The `m365-copilot-mcp` server provides three powerful capabilities for AI assist
 - **Microsoft 365 account** - With Microsoft 365 Copilot license
 - **MCP-compatible AI tool** - Such as Claude Code, GitHub Copilot, or any other MCP client
 
+## Video Tutorials
+
+Learn how to install and use the M365 Copilot MCP Server with these step-by-step video guides:
+
+### 📺 Claude Code with M365 Copilot MCP Server
+
+[![Claude Code with M365 Copilot MCP Server](https://img.youtube.com/vi/sZxSOiyfZ34/maxresdefault.jpg)](https://youtu.be/sZxSOiyfZ34)
+
+**Click the image above to watch the tutorial** on how to install and use the M365 Copilot MCP Server with Claude Code.
+
+### 📺 GitHub Copilot with M365 Copilot MCP Server
+
+[![GitHub Copilot with M365 Copilot MCP Server](https://img.youtube.com/vi/MVnTHrXbP4U/maxresdefault.jpg)](https://youtu.be/MVnTHrXbP4U)
+
+**Click the image above to watch the tutorial** on how to install and use the M365 Copilot MCP Server with GitHub Copilot in VS Code.
+
 ## Configuration
 
 Configure the MCP server in your AI tool's settings. The server uses `npx` to run directly from npm without requiring global installation.
