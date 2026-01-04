@@ -112,9 +112,20 @@ On first use, the server will automatically open your browser for Microsoft 365 
 **Your data is safe.** The MCP server:
 - ✅ Only reads data through official Microsoft Graph APIs
 - ✅ Respects your organization's access controls and permissions
-- ✅ Stores authentication tokens locally on your machine (encrypted)
+- ✅ Stores authentication tokens locally on your machine (encrypted by OS)
 - ✅ Does NOT store, collect, or transmit any of your M365 content
 - ✅ Makes direct API calls to Microsoft - no third-party servers involved
+
+**Token Security:**
+- 🔐 Access tokens are encrypted using OS-level security:
+  - **Windows**: DPAPI (Data Protection API) - binds to your user account
+  - **macOS**: Keychain - binds to your user account and system
+  - **Linux**: LibSecret - stored in system keyring
+- 🔐 Tokens **cannot be simply copied** to another computer and used
+- 🔐 Authentication records use file permissions (0600 - owner read/write only)
+- 🔐 Enable MFA on your Microsoft account for additional security
+
+**For detailed security analysis**, see [SECURITY.md](SECURITY.md)
 
 ### Using Your Own Azure AD App (Optional)
 
@@ -272,6 +283,86 @@ This is useful for:
 ```
 
 The MCP server acts as a secure bridge between your AI assistant and Microsoft 365, using official Microsoft APIs to access your data based on your permissions.
+
+## Security Best Practices
+
+### For Personal Use
+
+1. **Enable Multi-Factor Authentication (MFA)** 🔐
+   - Enable MFA on your Microsoft 365 account
+   - Even if credentials are compromised, MFA provides a second layer of protection
+   - [Learn how to enable MFA](https://support.microsoft.com/en-us/account-billing/how-to-use-the-microsoft-authenticator-app-9783c865-0308-42fb-a519-8cf666fe0acc)
+
+2. **Protect Your Credentials Directory** 🔐
+   - Never share or backup the `~/.IdentityService/` directory
+   - Ensure file permissions are correct (automatically set to 0600)
+   - On shared computers, use `m365copilotlogout` when finished
+
+3. **Regular Logout** 🔄
+   - Use the logout tool if you won't be using the service for extended periods
+   - Always logout before creating system backups or VM snapshots
+
+### For Enterprise Use
+
+1. **Use Your Own Azure AD Application** 🏢
+   - Register a custom Azure AD app for your organization
+   - This allows you to:
+     - Control access at the organization level
+     - Monitor usage through Azure AD logs
+     - Apply conditional access policies
+     - Revoke access centrally if needed
+
+2. **Configure Conditional Access Policies** 🛡️
+   - Restrict access to specific IP ranges or locations
+   - Require compliant devices
+   - Enforce session controls
+
+3. **Monitor Azure AD Sign-in Logs** 📊
+   - Regularly review sign-in logs in Azure AD Portal
+   - Look for unusual locations or access patterns
+   - Set up alerts for suspicious activity
+
+4. **Implement Zero Trust Security** 🎯
+   - Assume breach and verify explicitly
+   - Use least privilege access
+   - Consider network segmentation
+
+### What If Credentials Are Compromised?
+
+If you suspect your credentials may have been compromised:
+
+1. **Immediate Actions:**
+   - Use `m365copilotlogout` to clear local credentials
+   - Change your Microsoft 365 password immediately
+   - Review recent activity in Azure AD sign-in logs
+
+2. **Investigation:**
+   - Check for unfamiliar devices in your Microsoft account
+   - Review Azure AD audit logs for unauthorized access
+   - Look for suspicious file access or modifications in SharePoint/OneDrive
+
+3. **Recovery:**
+   - Revoke all active sessions in Azure AD
+   - Re-authenticate with new credentials
+   - Consider enabling additional security features (e.g., Conditional Access)
+
+### Understanding Credential Security
+
+**Q: Can someone copy my cached credentials to another computer?**
+
+**A: Generally no, but it depends:**
+
+- **Access Tokens**: Encrypted by your operating system and **cannot** be simply copied:
+  - Windows: DPAPI encryption binds to your user account and machine
+  - macOS: Keychain encryption binds to your system
+  - Linux: Stored in system keyring (security depends on keyring implementation)
+
+- **Authentication Record**: Contains only account metadata (username, tenant ID), not tokens
+  - Protected by file permissions (0600 - owner only)
+  - Copying it alone does **not** grant access
+  - Would require attacker to also have your Microsoft password
+
+**For detailed security analysis**, including threat models and improvement suggestions, see [SECURITY.md](SECURITY.md).
 
 ## Troubleshooting
 
