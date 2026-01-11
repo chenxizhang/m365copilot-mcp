@@ -5,6 +5,8 @@
 
 import {
   InteractiveBrowserCredential,
+  DeviceCodeCredential,
+  DeviceCodeInfo,
   TokenCredential,
   AccessToken,
   TokenCachePersistenceOptions,
@@ -25,8 +27,10 @@ useIdentityPlugin(cachePersistencePlugin);
 
 /**
  * Authentication method types
+ * - InteractiveBrowser: Opens a browser window for authentication (requires GUI)
+ * - DeviceCode: Shows a code and URL for authentication on any device (works in headless environments)
  */
-export type AuthMethod = 'InteractiveBrowser';
+export type AuthMethod = 'InteractiveBrowser' | 'DeviceCode';
 
 /**
  * Azure AD configuration interface
@@ -135,7 +139,20 @@ export class AuthenticationManager {
   }
 
   /**
+   * Device code callback - displays authentication instructions to the user
+   */
+  private deviceCodeCallback(deviceCodeInfo: DeviceCodeInfo): void {
+    // Output to stderr so it doesn't interfere with MCP protocol
+    console.error('\n' + '='.repeat(60));
+    console.error('DEVICE CODE AUTHENTICATION REQUIRED');
+    console.error('='.repeat(60));
+    console.error(deviceCodeInfo.message);
+    console.error('='.repeat(60) + '\n');
+  }
+
+  /**
    * Initialize the credential based on auth method
+   * Supports fallback from InteractiveBrowser to DeviceCode on headless systems
    */
   public async initialize(): Promise<void> {
     const { tenantId, clientId, clientSecret, authMethod } = this.config;
@@ -143,10 +160,9 @@ export class AuthenticationManager {
     info('Initializing authentication', { authMethod });
 
     try {
-      // Only InteractiveBrowser is supported
       if (!tenantId || !clientId) {
         throw new ConfigurationError(
-          'Missing required Azure AD configuration for InteractiveBrowser auth',
+          'Missing required Azure AD configuration',
           {
             hasTenantId: !!tenantId,
             hasClientId: !!clientId,
@@ -160,21 +176,18 @@ export class AuthenticationManager {
         info('Found existing authentication record - will attempt silent authentication');
       }
 
-      // Use http://localhost as redirect URI (Azure AD ignores the port for localhost)
-      // This allows the SDK to use any available port while matching the registered URI
-      const redirectUri = this.getRedirectUri();
+      // Determine which auth method to use
+      const effectiveAuthMethod = authMethod || 'InteractiveBrowser';
 
-      this.credential = new InteractiveBrowserCredential({
-        tenantId,
-        clientId,
-        redirectUri,
-        authenticationRecord: authRecord || undefined,
-        tokenCachePersistenceOptions: {
-          enabled: true,
-          name: 'm365-copilot-mcp-cache',
-        },
-      });
-      info('Initialized InteractiveBrowserCredential with persistent token cache', { redirectUri });
+      if (effectiveAuthMethod === 'DeviceCode') {
+        // User explicitly requested DeviceCode
+        this.credential = this.createDeviceCodeCredential(tenantId, clientId, authRecord);
+      } else {
+        // Default: InteractiveBrowser
+        this.credential = this.createInteractiveBrowserCredential(tenantId, clientId, authRecord);
+      }
+
+      info(`Initialized ${this.credential.constructor.name} with persistent token cache`);
     } catch (error) {
       logError('Failed to initialize authentication', error);
       throw error;
@@ -182,7 +195,78 @@ export class AuthenticationManager {
   }
 
   /**
+   * Create InteractiveBrowserCredential
+   */
+  private createInteractiveBrowserCredential(
+    tenantId: string,
+    clientId: string,
+    authRecord: AuthenticationRecord | null
+  ): InteractiveBrowserCredential {
+    const redirectUri = this.getRedirectUri();
+    info('Creating InteractiveBrowserCredential', { redirectUri });
+
+    return new InteractiveBrowserCredential({
+      tenantId,
+      clientId,
+      redirectUri,
+      authenticationRecord: authRecord || undefined,
+      tokenCachePersistenceOptions: {
+        enabled: true,
+        name: 'm365-copilot-mcp-cache',
+      },
+    });
+  }
+
+  /**
+   * Create DeviceCodeCredential
+   */
+  private createDeviceCodeCredential(
+    tenantId: string,
+    clientId: string,
+    authRecord: AuthenticationRecord | null
+  ): DeviceCodeCredential {
+    info('Creating DeviceCodeCredential (for headless environments)');
+
+    return new DeviceCodeCredential({
+      tenantId,
+      clientId,
+      userPromptCallback: this.deviceCodeCallback.bind(this),
+      authenticationRecord: authRecord || undefined,
+      tokenCachePersistenceOptions: {
+        enabled: true,
+        name: 'm365-copilot-mcp-cache',
+      },
+    });
+  }
+
+  /**
+   * Check if we should fallback to DeviceCode
+   * Returns true if the error indicates browser/GUI is not available
+   */
+  private shouldFallbackToDeviceCode(error: unknown): boolean {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    const errorName = error instanceof Error ? error.name : '';
+
+    // Check for common headless environment errors
+    const headlessIndicators = [
+      'Unable to open a browser',
+      'no browser',
+      'DISPLAY',
+      'headless',
+      'Cannot open browser',
+      'browser window',
+      'CredentialUnavailableError',
+    ];
+
+    return headlessIndicators.some(
+      indicator => errorMsg.toLowerCase().includes(indicator.toLowerCase()) ||
+                   errorName.toLowerCase().includes(indicator.toLowerCase())
+    );
+  }
+
+  /**
    * Get access token for specified scopes
+   * Supports automatic fallback from InteractiveBrowser to DeviceCode
    */
   public async getAccessToken(scopes: string[]): Promise<string> {
     if (!this.credential) {
@@ -201,7 +285,12 @@ export class AuthenticationManager {
 
     try {
       info('Requesting new access token from Azure AD...', { scopes });
-      info('  This may open a browser window for interactive login');
+
+      if (this.credential instanceof InteractiveBrowserCredential) {
+        info('  This may open a browser window for interactive login');
+      } else if (this.credential instanceof DeviceCodeCredential) {
+        info('  Using device code flow - check console for authentication instructions');
+      }
 
       const tokenResponse = await this.credential.getToken(scopes);
 
@@ -224,6 +313,54 @@ export class AuthenticationManager {
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       const errorName = error instanceof Error ? error.name : 'Unknown';
+
+      // Check if we should fallback to DeviceCode
+      if (this.credential instanceof InteractiveBrowserCredential && this.shouldFallbackToDeviceCode(error)) {
+        warn('InteractiveBrowser authentication failed - falling back to DeviceCode flow');
+        warn('  This usually happens in headless environments without a browser');
+
+        // Load auth record for fallback credential
+        const authRecord = this.authRecord;
+
+        // Create DeviceCode credential as fallback
+        this.credential = this.createDeviceCodeCredential(
+          this.config.tenantId!,
+          this.config.clientId!,
+          authRecord
+        );
+
+        info('Retrying authentication with DeviceCode flow...');
+
+        // Retry with DeviceCode
+        try {
+          const tokenResponse = await this.credential.getToken(scopes);
+
+          if (!tokenResponse) {
+            throw new AuthenticationError('Failed to obtain access token with DeviceCode');
+          }
+
+          // Cache the token
+          this.tokenCache.set(scopeKey, {
+            token: tokenResponse,
+            expiresAt: tokenResponse.expiresOnTimestamp,
+          });
+
+          info('✓ Access token obtained successfully via DeviceCode', {
+            scopes,
+            expiresAt: new Date(tokenResponse.expiresOnTimestamp).toISOString(),
+          });
+
+          return tokenResponse.token;
+        } catch (fallbackError) {
+          const fallbackMsg = fallbackError instanceof Error ? fallbackError.message : String(fallbackError);
+          logError('✗ DeviceCode fallback also failed', fallbackError);
+          throw new AuthenticationError(
+            `Failed to obtain access token (both InteractiveBrowser and DeviceCode failed): ${fallbackMsg}`,
+            { scopes, originalError: errorMsg, fallbackError: fallbackMsg }
+          );
+        }
+      }
+
       logError('✗ Failed to get access token', error, {
         scopes,
         errorName,
@@ -299,8 +436,14 @@ export class AuthenticationManager {
       return; // Already have it
     }
 
-    if (!this.credential || !(this.credential instanceof InteractiveBrowserCredential)) {
-      throw new AuthenticationError('Credential not initialized or not InteractiveBrowserCredential');
+    if (!this.credential) {
+      throw new AuthenticationError('Credential not initialized');
+    }
+
+    // Both InteractiveBrowserCredential and DeviceCodeCredential support authenticate()
+    if (!(this.credential instanceof InteractiveBrowserCredential) &&
+        !(this.credential instanceof DeviceCodeCredential)) {
+      throw new AuthenticationError('Credential type does not support authenticate()');
     }
 
     try {

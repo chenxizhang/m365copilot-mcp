@@ -150,7 +150,8 @@ Completed features:
 
 ### Stage 3: Azure Identity Integration (COMPLETED)
 Completed features:
-- Implemented Azure AD authentication with InteractiveBrowser method
+- Implemented Azure AD authentication with InteractiveBrowser and DeviceCode methods
+- **Automatic fallback**: InteractiveBrowser automatically falls back to DeviceCode in headless environments
 - Added token management with caching and auto-refresh
 - Created default multi-tenant app configuration with override capability
 - Added authentication tools (authConfig, authTest)
@@ -158,6 +159,7 @@ Completed features:
 - Auto-authentication on server startup with fallback to manual authentication
 - **Fixed Redirect URI**: Uses `http://localhost` as default redirect URI (Azure AD ignores port for localhost URIs, allowing dynamic port allocation)
 - **Customizable Redirect URI**: Can be overridden via `REDIRECT_URI` environment variable
+- **DeviceCode Flow**: Shows a URL and code in console for authentication on any device (ideal for Linux servers)
 - **Required Microsoft Graph API Permissions**:
   - Sites.Read.All - Access SharePoint sites
   - Mail.Read - Read user mail
@@ -173,6 +175,9 @@ Completed features:
 - Azure AD matches this URI regardless of the actual port used by the application
 - Solves the random port issue where users couldn't pre-register redirect URIs
 - Alternative redirect URI supported: `https://login.microsoftonline.com/common/oauth2/nativeclient`
+- **DeviceCode Fallback**: When InteractiveBrowser fails (e.g., no DISPLAY on Linux), automatically falls back to DeviceCode flow
+- DeviceCode flow displays a URL (https://microsoft.com/devicelogin) and a code in console
+- User can complete authentication on any device with a browser
 
 ### Stage 4: M365 Copilot Retrieval API (COMPLETED)
 Completed features:
@@ -375,15 +380,19 @@ Optional environment configuration via `.env` file:
 - `AZURE_TENANT_ID`: Override default 'common' tenant (optional)
 - `AZURE_CLIENT_ID`: Override default multi-tenant app (optional)
 - `AZURE_CLIENT_SECRET`: Required for ClientSecret auth method only
-- `AUTH_METHOD`: Choose authentication method (InteractiveBrowser)
+- `AUTH_METHOD`: Choose authentication method (`InteractiveBrowser` or `DeviceCode`)
 - `REDIRECT_URI`: Override default redirect URI (optional, default: `http://localhost`)
 - `LOG_LEVEL`: Set logging level (DEBUG, INFO, WARN, ERROR)
 
 **Default Configuration:**
 - ClientID: `f44ab954-9e38-4330-aa49-e93d73ab0ea6` (built-in multi-tenant app)
 - TenantID: `common` (multi-tenant support)
-- AuthMethod: `InteractiveBrowser` (browser-based authentication)
+- AuthMethod: `InteractiveBrowser` (browser-based authentication, auto-fallback to DeviceCode on headless systems)
 - RedirectURI: `http://localhost` (Azure AD ignores port for localhost URIs)
+
+**Authentication Methods (automatic selection - no configuration needed):**
+- `InteractiveBrowser` (default): Opens browser for login. **Automatically** falls back to DeviceCode if browser unavailable.
+- `DeviceCode`: Shows URL and code in console. User authenticates on any device. Triggered automatically on headless systems.
 
 ### Stage 4+
 Will add:

@@ -107,6 +107,17 @@ Refer to your specific AI tool's documentation for MCP server configuration inst
 
 On first use, the server will automatically open your browser for Microsoft 365 authentication. After signing in once, your credentials are securely cached locally - no need to sign in again.
 
+### Headless Environments (Linux Servers)
+
+**No configuration needed!** If you're running the MCP server on a headless Linux server without a browser, the server will **automatically** detect this and fall back to **Device Code Flow**:
+
+1. The server will display a URL (`https://microsoft.com/devicelogin`) and a code in the console
+2. Open the URL on any device with a browser (phone, laptop, etc.)
+3. Enter the code and sign in with your Microsoft 365 account
+4. The server will automatically complete authentication
+
+This happens automatically - just run the same configuration as on any other platform.
+
 ### Security & Privacy
 
 **Your data is safe.** The MCP server:
@@ -284,7 +295,10 @@ The MCP server acts as a secure bridge between your AI assistant and Microsoft 3
 **Solution:** Ensure `http://localhost` is registered in your Azure AD app registration under **Authentication → Mobile and desktop applications**. Azure AD will match this URI regardless of the actual port used. If using a custom redirect URI, set the `REDIRECT_URI` environment variable to match your Azure AD configuration.
 
 **Problem:** Browser doesn't open for login
-**Solution:** Check your firewall settings or try a custom redirect URI using the `REDIRECT_URI` environment variable
+**Solution:**
+- On headless systems (Linux servers), the server will **automatically** fall back to Device Code Flow
+- Check console output for the authentication URL and code
+- On systems with a browser, check firewall settings or try a custom redirect URI
 
 **Problem:** "Permission denied" errors
 **Solution:** Ensure your Microsoft 365 account has access to the requested resources. If you recently changed permissions or accounts, try using the logout tool and re-authenticating.
